@@ -10,8 +10,18 @@
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet">
 </head>
 <body class="bg-base-200 text-base-content">
-  <div class="max-w-6xl mx-auto p-6">
-    <h1 class="text-4xl font-bold mb-6 text-center">📅 What’s On Today</h1>
+
+  <!-- Navbar with current date -->
+  <div class="navbar bg-primary text-primary-content mb-6">
+    <div class="flex-1 px-6">
+      <span class="text-2xl font-bold">📅 Library Schedule</span>
+    </div>
+    <div class="px-6">
+      <span id="current-date" class="text-lg"></span>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4">
     <div id="rooms" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
   </div>
 
@@ -19,14 +29,17 @@
     // === CONFIG ===
     const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
     const calendars = [
-      { id: 'paraparaumumake@gmail.com', name: 'Room A' },
-      /* add your other five rooms here: */
+      { id: 'paraparaumumake@gmail.com',                  name: 'Room A' },
       { id: '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com', name: 'Makerspace' },
-      { id: 'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com', name: 'Discussion Space' },
+      { id: 'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com', name: 'Discussion' },
       { id: '9d751487e4a33f27971ca1b54bd27d82b56d39278aabd6bcb562c431979396a2@group.calendar.google.com', name: 'Learning Centre' },
-      { id: 'bf9774fd9a1f9cf44aff3d1ee97ef2a5e30789ef17f99ba846c3a780850f7e7a@group.calendar.google.com', name: 'Tamariki space' },
-      { id: '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com', name: 'Makerspace' },
+      { id: 'bf9774fd9a1f9cf44aff3d1ee97ef2a5e30789ef17f99ba846c3a780850f7e7a@group.calendar.google.com', name: 'Tamariki' },
+      { id: '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com', name: 'Tech Lab' },
     ];
+
+    // === HEADER DATE ===
+    document.getElementById('current-date').textContent =
+      new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     // === HELPERS ===
     const formatTime = ds => new Date(ds).toLocaleTimeString([], {
@@ -34,7 +47,7 @@
     });
 
     async function fetchEvents(id) {
-      const now = new Date();
+      const now     = new Date();
       const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
       const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events` +
@@ -48,32 +61,51 @@
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
+
       for (const cal of calendars) {
-        const events = await fetchEvents(cal.id);
-
+        // Card wrapper
         const card = document.createElement('div');
-        card.className = 'card bg-base-100 shadow-xl';
+        card.className = 'card bg-base-100 shadow-lg border border-base-300';
 
+        // Body with a spinner initially
         card.innerHTML = `
-          <div class="card-body">
-            <h2 class="card-title">${cal.name}</h2>
-            <div class="divider"></div>
-            ${events.length === 0
-              ? `<p class="text-gray-500">No events</p>`
-              : `<ul class="space-y-2">
-                  ${events.map(e => {
-                    const start = formatTime(e.start.dateTime || e.start.date);
-                    const end   = formatTime(e.end.dateTime   || e.end.date);
-                    return `<li><span class="font-semibold">${start}–${end}</span>: ${e.summary}</li>`;
-                  }).join('')}
-                 </ul>`
-            }
-          </div>`;
-
+          <div class="card-body p-4">
+            <h2 class="card-title">${cal.name} <span class="badge badge-accent">Loading</span></h2>
+            <div class="flex justify-center py-4">
+              <span class="loading loading-spinner loading-lg"></span>
+            </div>
+          </div>
+        `;
         container.appendChild(card);
+
+        // Fetch & render events
+        const events = await fetchEvents(cal.id);
+        const body = card.querySelector('.card-body');
+        body.innerHTML = `
+          <h2 class="card-title mb-2">
+            ${cal.name}
+            <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
+          </h2>
+          <div class="divider"></div>
+          ${events.length === 0
+            ? `<p class="text-gray-500 text-center py-4">No events today</p>`
+            : `<ul class="space-y-2">
+                 ${events.map(e => {
+                   const start = formatTime(e.start.dateTime || e.start.date);
+                   const end   = formatTime(e.end.dateTime   || e.end.date);
+                   return `<li class="flex justify-between">
+                             <span class="font-medium">${e.summary}</span>
+                             <span class="text-sm text-gray-600">${start}–${end}</span>
+                           </li>`;
+                 }).join('')}
+               </ul>`
+          }
+        `;
       }
     }
+
     init();
   </script>
 </body>
 </html>
+
