@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Library “What’s On” Display</title>
+
+  <!-- Tailwind + DaisyUI via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet">
+</head>
+<body class="bg-base-200 text-base-content">
+  <div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-4xl font-bold mb-6 text-center">📅 What’s On Today</h1>
+    <div id="rooms" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
+  </div>
+
+  <script>
+    // === CONFIG ===
+    const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
+    const calendars = [
+      { id: 'paraparaumumake@gmail.com', name: 'Room A' },
+      /* add your other five rooms here: */
+      // { id: 'xxxxx@group.calendar.google.com', name: 'Room B' },
+    ];
+
+    // === HELPERS ===
+    const formatTime = ds => new Date(ds).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    async function fetchEvents(id) {
+      const now = new Date();
+      const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
+      const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events` +
+                  `?key=${API_KEY}` +
+                  `&timeMin=${timeMin}&timeMax=${timeMax}` +
+                  `&singleEvents=true&orderBy=startTime`;
+      const res = await fetch(url);
+      return (await res.json()).items || [];
+    }
+
+    // === RENDER ===
+    async function init() {
+      const container = document.getElementById('rooms');
+      for (const cal of calendars) {
+        const events = await fetchEvents(cal.id);
+
+        const card = document.createElement('div');
+        card.className = 'card bg-base-100 shadow-xl';
+
+        card.innerHTML = `
+          <div class="card-body">
+            <h2 class="card-title">${cal.name}</h2>
+            <div class="divider"></div>
+            ${events.length === 0
+              ? `<p class="text-gray-500">No events</p>`
+              : `<ul class="space-y-2">
+                  ${events.map(e => {
+                    const start = formatTime(e.start.dateTime || e.start.date);
+                    const end   = formatTime(e.end.dateTime   || e.end.date);
+                    return `<li><span class="font-semibold">${start}–${end}</span>: ${e.summary}</li>`;
+                  }).join('')}
+                 </ul>`
+            }
+          </div>`;
+
+        container.appendChild(card);
+      }
+    }
+    init();
+  </script>
+</body>
+</html>
