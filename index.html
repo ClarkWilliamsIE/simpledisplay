@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Library “What’s On” Display</title>
+  <title>Library “What’s On - Paraparaumu Library” Display</title>
 
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,7 +30,7 @@
     // === CONFIG ===
     const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
     const calendars = [
-      { id: 'paraparaumumake@gmail.com',                  name: 'Room A' },
+      { id: 'paraparaumumake@gmail.com',                  name: 'Shared space' },
       { id: '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com', name: 'Makerspace' },
       { id: 'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com', name: 'Discussion' },
       { id: '9d751487e4a33f27971ca1b54bd27d82b56d39278aabd6bcb562c431979396a2@group.calendar.google.com', name: 'Learning Centre' },
@@ -71,7 +71,7 @@
         // Body with a spinner initially
         card.innerHTML = `
           <div class="card-body p-4">
-            <h2 class="card-title text-lg font-semibold truncate">${cal.name} <span class="badge badge-accent">Loading</span></h2>
+            <h2 class="card-title">${cal.name} <span class="badge badge-accent">Loading</span></h2>
             <div class="flex justify-center py-4">
               <span class="loading loading-spinner loading-lg"></span>
             </div>
@@ -83,7 +83,7 @@
         const events = await fetchEvents(cal.id);
         const body = card.querySelector('.card-body');
         body.innerHTML = `
-          <h2 class="card-title mb-2 text-teal-500 font-semibold truncate">
+          <h2 class="card-title mb-2 text-teal-500">
             ${cal.name}
             <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
           </h2>
@@ -103,7 +103,7 @@
                      const end   = formatTime(e.end.dateTime   || e.end.date);
                      return `
                        <tr>
-                         <td class="text-sm text-teal-600 truncate">${e.summary}</td>
+                         <td class="text-sm text-teal-600">${e.summary}</td>
                          <td class="text-sm text-indigo-600 font-semibold">${start}–${end}</td>
                        </tr>
                      `;
@@ -119,4 +119,5 @@
   </script>
 </body>
 </html>
+
 
