@@ -11,26 +11,19 @@
 </head>
 <body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
 
-  <!-- Browser Mockup -->
-  <div class="mockup-window bg-teal-500 text-white p-6 rounded-lg shadow-xl my-6">
-    <div class="mockup-code">
-
-      <!-- Navbar with current date -->
-      <div class="navbar bg-transparent text-white mb-6">
-        <div class="flex-1 px-6">
-          <span class="text-3xl font-extrabold">📅 Library Schedule</span>
-        </div>
-        <div class="px-6">
-          <span id="current-date" class="text-lg"></span>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-6 flex-1">
-        <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
-      </div>
-
+  <!-- Navbar with current date -->
+  <div class="navbar bg-transparent text-white mb-6">
+    <div class="flex-1 px-6">
+      <span class="text-3xl font-extrabold">📅 Library Schedule</span>
     </div>
+    <div class="px-6">
+      <span id="current-date" class="text-lg"></span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 flex-1">
+    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
   </div>
 
   <script>
@@ -71,13 +64,13 @@
       const container = document.getElementById('rooms');
 
       for (const cal of calendars) {
-        // Card wrapper
+        // Card wrapper inside a browser mockup
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'mockup-window border-2 border-teal-300 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
 
         // Body with a spinner initially
         card.innerHTML = `
-          <div class="card-body p-6">
+          <div class="mockup-code p-6">
             <h2 class="card-title text-xl font-bold mb-4 text-teal-500">${cal.name} <span class="badge badge-accent">Loading</span></h2>
             <div class="flex justify-center py-4">
               <span class="loading loading-spinner loading-lg"></span>
@@ -88,7 +81,7 @@
 
         // Fetch & render events
         const events = await fetchEvents(cal.id);
-        const body = card.querySelector('.card-body');
+        const body = card.querySelector('.mockup-code');
         body.innerHTML = `
           <h2 class="card-title mb-2 text-teal-500">
             ${cal.name}
@@ -126,4 +119,3 @@
   </script>
 </body>
 </html>
-
