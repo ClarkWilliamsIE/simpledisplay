@@ -64,13 +64,13 @@
       const container = document.getElementById('rooms');
 
       for (const cal of calendars) {
-        // Card wrapper inside a browser mockup
+        // Card wrapper
         const card = document.createElement('div');
-        card.className = 'mockup-window border-2 border-teal-300 rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
 
         // Body with a spinner initially
         card.innerHTML = `
-          <div class="mockup-code p-6">
+          <div class="card-body p-6">
             <h2 class="card-title text-xl font-bold mb-4 text-teal-500">${cal.name} <span class="badge badge-accent">Loading</span></h2>
             <div class="flex justify-center py-4">
               <span class="loading loading-spinner loading-lg"></span>
@@ -81,7 +81,7 @@
 
         // Fetch & render events
         const events = await fetchEvents(cal.id);
-        const body = card.querySelector('.mockup-code');
+        const body = card.querySelector('.card-body');
         body.innerHTML = `
           <h2 class="card-title mb-2 text-teal-500">
             ${cal.name}
@@ -90,26 +90,21 @@
           <div class="divider"></div>
           ${events.length === 0
             ? `<p class="text-gray-500 text-center py-4">No events today</p>`
-            : `<table class="table w-full">
-                 <thead>
-                   <tr>
-                     <th class="text-sm font-semibold">Event</th>
-                     <th class="text-sm font-semibold">Time</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   ${events.map(e => {
-                     const start = formatTime(e.start.dateTime || e.start.date);
-                     const end   = formatTime(e.end.dateTime   || e.end.date);
-                     return `
-                       <tr class="hover:bg-teal-50">
-                         <td class="text-sm text-teal-600">${e.summary}</td>
-                         <td class="text-sm text-indigo-600 font-semibold">${start}–${end}</td>
-                       </tr>
-                     `;
-                   }).join('')}
-                 </tbody>
-               </table>`
+            : `<div class="timeline timeline-center">
+                 ${events.map(e => {
+                   const start = formatTime(e.start.dateTime || e.start.date);
+                   const end   = formatTime(e.end.dateTime   || e.end.date);
+                   return `
+                     <div class="timeline-item">
+                       <div class="timeline-marker bg-teal-500"></div>
+                       <div class="timeline-content p-4 bg-teal-100 rounded-xl shadow-lg">
+                         <h3 class="font-semibold text-teal-600">${e.summary}</h3>
+                         <p class="text-sm text-indigo-600">${start}–${end}</p>
+                       </div>
+                     </div>
+                   `;
+                 }).join('')}
+               </div>`
           }
         `;
       }
