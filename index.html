@@ -11,19 +11,26 @@
 </head>
 <body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
 
-  <!-- Navbar with current date -->
-  <div class="navbar bg-transparent text-white mb-6">
-    <div class="flex-1 px-6">
-      <span class="text-3xl font-extrabold"> Paraparaumu Library What's On</span>
-    </div>
-    <div class="px-6">
-      <span id="current-date" class="text-lg"></span>
-    </div>
-  </div>
+  <!-- Browser Mockup -->
+  <div class="mockup-window bg-teal-500 text-white p-6 rounded-lg shadow-xl my-6">
+    <div class="mockup-code">
 
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-6 flex-1">
-    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+      <!-- Navbar with current date -->
+      <div class="navbar bg-transparent text-white mb-6">
+        <div class="flex-1 px-6">
+          <span class="text-3xl font-extrabold">📅 Library Schedule</span>
+        </div>
+        <div class="px-6">
+          <span id="current-date" class="text-lg"></span>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="max-w-7xl mx-auto px-6 flex-1">
+        <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -119,5 +126,4 @@
   </script>
 </body>
 </html>
-
 
