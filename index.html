@@ -22,15 +22,8 @@
   </div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-6 flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Left Column - Calendar events -->
+  <div class="max-w-7xl mx-auto px-6 flex-1">
     <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
-
-    <!-- Right Column - "What's On This Week" Box -->
-    <div id="this-week" class="bg-white p-4 rounded-lg shadow-xl border-2 border-teal-300">
-      <h2 class="text-xl font-semibold mb-4 text-teal-500">What's On This Week</h2>
-      <div id="weekly-events" class="space-y-4"></div>
-    </div>
   </div>
 
   <script>
@@ -69,11 +62,11 @@
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
-      const weeklyContainer = document.getElementById('weekly-events');
-      let weeklyEvents = [];
+
+      let allEvents = [];
 
       for (const cal of calendars) {
-        // Card wrapper
+        // Card wrapper for individual rooms
         const card = document.createElement('div');
         card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
 
@@ -90,6 +83,7 @@
 
         // Fetch & render events
         const events = await fetchEvents(cal.id);
+        allEvents = allEvents.concat(events); // Collecting all events for the "All Events" card
         const body = card.querySelector('.card-body');
         body.innerHTML = `
           <h2 class="card-title mb-2 text-teal-500">
@@ -110,12 +104,6 @@
                    ${events.map(e => {
                      const start = formatTime(e.start.dateTime || e.start.date);
                      const end   = formatTime(e.end.dateTime   || e.end.date);
-                     const eventDetails = {
-                       summary: e.summary,
-                       start: start,
-                       end: end,
-                     };
-                     weeklyEvents.push(eventDetails);  // Save event for the weekly list
                      return `
                        <tr class="hover:bg-teal-50">
                          <td class="text-sm text-teal-600">${e.summary}</td>
@@ -129,17 +117,31 @@
         `;
       }
 
-      // Render weekly events list
-      if (weeklyEvents.length > 0) {
-        weeklyEvents.forEach(event => {
-          const eventItem = document.createElement('div');
-          eventItem.className = 'text-sm text-teal-600';
-          eventItem.innerHTML = `<strong>${event.summary}</strong><br/>${event.start} – ${event.end}`;
-          weeklyContainer.appendChild(eventItem);
-        });
-      } else {
-        weeklyContainer.innerHTML = '<p class="text-gray-500">No events this week.</p>';
-      }
+      // Card for "All Events" display
+      const allEventsCard = document.createElement('div');
+      allEventsCard.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+
+      allEventsCard.innerHTML = `
+        <div class="card-body p-6">
+          <h2 class="card-title text-xl font-bold mb-4 text-teal-500">All Events</h2>
+          <div class="divider"></div>
+          ${allEvents.length === 0
+            ? `<p class="text-gray-500 text-center py-4">No events today</p>`
+            : `<ul class="space-y-2">
+                ${allEvents.map(e => {
+                  const start = formatTime(e.start.dateTime || e.start.date);
+                  return `
+                    <li class="flex justify-between text-sm text-teal-600">
+                      <span>${e.summary}</span>
+                      <span class="font-semibold text-indigo-600">${start}</span>
+                    </li>
+                  `;
+                }).join('')}
+              </ul>`
+          }
+        </div>
+      `;
+      container.appendChild(allEventsCard);
     }
 
     init();
