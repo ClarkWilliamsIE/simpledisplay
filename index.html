@@ -9,20 +9,21 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet">
 </head>
-<body class="bg-base-200 text-base-content">
+<body class="bg-gray-50 text-gray-900">
 
   <!-- Navbar with current date -->
-  <div class="navbar bg-primary text-primary-content mb-6">
+  <div class="navbar bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white mb-6">
     <div class="flex-1 px-6">
-      <span class="text-2xl font-bold">📅 Library Schedule</span>
+      <span class="text-3xl font-extrabold">📅 Library Schedule</span>
     </div>
     <div class="px-6">
       <span id="current-date" class="text-lg"></span>
     </div>
   </div>
 
-  <div class="max-w-6xl mx-auto px-4">
-    <div id="rooms" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6">
+    <div id="rooms" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
   </div>
 
   <script>
@@ -65,12 +66,12 @@
       for (const cal of calendars) {
         // Card wrapper
         const card = document.createElement('div');
-        card.className = 'card bg-base-100 shadow-lg border border-base-300';
+        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition';
 
         // Body with a spinner initially
         card.innerHTML = `
           <div class="card-body p-4">
-            <h2 class="card-title">${cal.name} <span class="badge badge-accent">Loading</span></h2>
+            <h2 class="card-title">${cal.name} <span class="badge badge-info">Loading</span></h2>
             <div class="flex justify-center py-4">
               <span class="loading loading-spinner loading-lg"></span>
             </div>
@@ -82,9 +83,9 @@
         const events = await fetchEvents(cal.id);
         const body = card.querySelector('.card-body');
         body.innerHTML = `
-          <h2 class="card-title mb-2">
+          <h2 class="card-title mb-2 text-teal-500">
             ${cal.name}
-            <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
+            <span class="badge badge-success">${events.length} ${events.length===1?'event':'events'}</span>
           </h2>
           <div class="divider"></div>
           ${events.length === 0
@@ -94,7 +95,7 @@
                    const start = formatTime(e.start.dateTime || e.start.date);
                    const end   = formatTime(e.end.dateTime   || e.end.date);
                    return `<li class="flex justify-between">
-                             <span class="font-medium">${e.summary}</span>
+                             <span class="font-medium text-teal-600">${e.summary}</span>
                              <span class="text-sm text-gray-600">${start}–${end}</span>
                            </li>`;
                  }).join('')}
@@ -108,4 +109,5 @@
   </script>
 </body>
 </html>
+
 
