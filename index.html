@@ -21,21 +21,19 @@
     </div>
   </div>
 
-  <!-- Main Content (Two Columns) -->
-  <div class="max-w-7xl mx-auto px-6 flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-    <!-- "What's On Today" Section -->
-    <div id="today" class="space-y-4">
-      <h2 class="text-2xl font-bold text-teal-500">What's On Today</h2>
-      <div id="today-rooms"></div>
+  <!-- Main Content (Left and Right Columns) -->
+  <div class="max-w-7xl mx-auto px-6 flex gap-6">
+    <!-- Left column: "What's On Today" -->
+    <div class="w-1/2">
+      <h2 class="text-xl font-bold mb-4 text-teal-500">What's On Today</h2>
+      <div id="today-events" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
     </div>
 
-    <!-- "What's On This Week" Section -->
-    <div id="this-week" class="space-y-4">
-      <h2 class="text-2xl font-bold text-teal-500">What's On This Week</h2>
-      <div id="this-week-rooms"></div>
+    <!-- Right column: "What's On This Week" -->
+    <div class="w-1/2">
+      <h2 class="text-xl font-bold mb-4 text-teal-500">What's On This Week</h2>
+      <div id="this-week-events"></div>
     </div>
-
   </div>
 
   <script>
@@ -59,7 +57,10 @@
       hour: '2-digit', minute: '2-digit'
     });
 
-    async function fetchEvents(id, timeMin, timeMax) {
+    async function fetchEvents(id) {
+      const now     = new Date();
+      const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
+      const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events` +
                   `?key=${API_KEY}` +
                   `&timeMin=${timeMin}&timeMax=${timeMax}` +
@@ -68,110 +69,73 @@
       return (await res.json()).items || [];
     }
 
-    // === DATE RANGE FOR THIS WEEK ===
-    function getStartAndEndOfWeek() {
+    async function fetchWeekEvents(id) {
       const now = new Date();
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())).setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(now.setDate(now.getDate() + 6)).setHours(23, 59, 59, 999);
-      return [startOfWeek, endOfWeek];
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Get the start of the week (Sunday)
+      const endOfWeek = new Date(now.setDate(now.getDate() + 6)); // End of the week (Saturday)
+      const timeMin = new Date(startOfWeek.setHours(0, 0, 0, 0)).toISOString();
+      const timeMax = new Date(endOfWeek.setHours(23, 59, 59, 999)).toISOString();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events` +
+                  `?key=${API_KEY}` +
+                  `&timeMin=${timeMin}&timeMax=${timeMax}` +
+                  `&singleEvents=true&orderBy=startTime`;
+      const res = await fetch(url);
+      return (await res.json()).items || [];
     }
 
     // === RENDER ===
     async function init() {
-      const todayContainer = document.getElementById('today-rooms');
-      const thisWeekContainer = document.getElementById('this-week-rooms');
+      const todayContainer = document.getElementById('today-events');
+      const thisWeekContainer = document.getElementById('this-week-events');
 
-      // Fetch Today's Events
-      const todayStart = new Date().toISOString().split('T')[0] + "T00:00:00Z";
-      const todayEnd = new Date().toISOString().split('T')[0] + "T23:59:59Z";
-      
       for (const cal of calendars) {
-        const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        // Fetch and render today's events
+        const todayEvents = await fetchEvents(cal.id);
+        const todayBody = todayContainer;
 
-        // Loading state
-        card.innerHTML = `
-          <div class="card-body p-6">
-            <h2 class="card-title text-xl font-bold mb-4 text-teal-500">${cal.name} <span class="badge badge-accent">Loading</span></h2>
-            <div class="flex justify-center py-4">
-              <span class="loading loading-spinner loading-lg"></span>
-            </div>
-          </div>
-        `;
-        todayContainer.appendChild(card);
-
-        // Fetch & Render Events for Today
-        const eventsToday = await fetchEvents(cal.id, todayStart, todayEnd);
-        const todayBody = card.querySelector('.card-body');
-        todayBody.innerHTML = `
-          <h2 class="card-title mb-2 text-teal-500">
-            ${cal.name}
-            <span class="badge badge-info">${eventsToday.length} ${eventsToday.length===1?'event':'events'}</span>
-          </h2>
+        todayBody.innerHTML += `
+          <h3 class="text-lg font-semibold text-teal-500">${cal.name}</h3>
           <div class="divider"></div>
-          ${eventsToday.length === 0
+          ${todayEvents.length === 0
             ? `<p class="text-gray-500 text-center py-4">No events today</p>`
-            : `<table class="table w-full">
-                 <thead>
-                   <tr>
-                     <th class="text-sm font-semibold">Event</th>
-                     <th class="text-sm font-semibold">Time</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   ${eventsToday.map(e => {
-                     const start = formatTime(e.start.dateTime || e.start.date);
-                     const end   = formatTime(e.end.dateTime   || e.end.date);
-                     return `
-                       <tr class="hover:bg-teal-50">
-                         <td class="text-sm text-teal-600">${e.summary}</td>
-                         <td class="text-sm text-indigo-600 font-semibold">${start}–${end}</td>
-                       </tr>
-                     `;
-                   }).join('')}
-                 </tbody>
-               </table>`
+            : `<ul>
+                 ${todayEvents.map(e => {
+                   const start = formatTime(e.start.dateTime || e.start.date);
+                   const end   = formatTime(e.end.dateTime   || e.end.date);
+                   return `
+                     <li class="py-2">
+                       <strong class="text-teal-600">${e.summary}</strong>
+                       <span class="text-indigo-600 font-semibold">${start}–${end}</span>
+                     </li>
+                   `;
+                 }).join('')}
+               </ul>`
           }
         `;
 
-        // Fetch & Render Events for This Week
-        const [startOfWeek, endOfWeek] = getStartAndEndOfWeek();
-        const weekStart = new Date(startOfWeek).toISOString();
-        const weekEnd = new Date(endOfWeek).toISOString();
+        // Fetch and render this week's events
+        const thisWeekEvents = await fetchWeekEvents(cal.id);
+        const thisWeekBody = thisWeekContainer;
 
-        const eventsThisWeek = await fetchEvents(cal.id, weekStart, weekEnd);
-        const thisWeekBody = card.cloneNode(true).querySelector('.card-body');
-        thisWeekBody.innerHTML = `
-          <h2 class="card-title mb-2 text-teal-500">
-            ${cal.name}
-            <span class="badge badge-info">${eventsThisWeek.length} ${eventsThisWeek.length===1?'event':'events'}</span>
-          </h2>
+        thisWeekBody.innerHTML += `
+          <h3 class="text-lg font-semibold text-teal-500">${cal.name}</h3>
           <div class="divider"></div>
-          ${eventsThisWeek.length === 0
+          ${thisWeekEvents.length === 0
             ? `<p class="text-gray-500 text-center py-4">No events this week</p>`
-            : `<table class="table w-full">
-                 <thead>
-                   <tr>
-                     <th class="text-sm font-semibold">Event</th>
-                     <th class="text-sm font-semibold">Time</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   ${eventsThisWeek.map(e => {
-                     const start = formatTime(e.start.dateTime || e.start.date);
-                     const end   = formatTime(e.end.dateTime   || e.end.date);
-                     return `
-                       <tr class="hover:bg-teal-50">
-                         <td class="text-sm text-teal-600">${e.summary}</td>
-                         <td class="text-sm text-indigo-600 font-semibold">${start}–${end}</td>
-                       </tr>
-                     `;
-                   }).join('')}
-                 </tbody>
-               </table>`
+            : `<ul>
+                 ${thisWeekEvents.map(e => {
+                   const start = formatTime(e.start.dateTime || e.start.date);
+                   const end   = formatTime(e.end.dateTime   || e.end.date);
+                   return `
+                     <li class="py-2">
+                       <strong class="text-teal-600">${e.summary}</strong>
+                       <span class="text-indigo-600 font-semibold">${start}–${end}</span>
+                     </li>
+                   `;
+                 }).join('')}
+               </ul>`
           }
         `;
-        thisWeekContainer.appendChild(card);
       }
     }
 
@@ -179,6 +143,5 @@
   </script>
 </body>
 </html>
-
 
 
