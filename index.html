@@ -23,7 +23,7 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 flex-1">
-    <div id="rooms" class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>
+    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
   </div>
 
   <script>
@@ -66,12 +66,12 @@
       for (const cal of calendars) {
         // Card wrapper
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition';
+        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
 
         // Body with a spinner initially
         card.innerHTML = `
-          <div class="card-body p-4">
-            <h2 class="card-title">${cal.name} <span class="badge badge-accent">Loading</span></h2>
+          <div class="card-body p-6">
+            <h2 class="card-title text-xl font-bold mb-4 text-teal-500">${cal.name} <span class="badge badge-accent">Loading</span></h2>
             <div class="flex justify-center py-4">
               <span class="loading loading-spinner loading-lg"></span>
             </div>
@@ -102,7 +102,7 @@
                      const start = formatTime(e.start.dateTime || e.start.date);
                      const end   = formatTime(e.end.dateTime   || e.end.date);
                      return `
-                       <tr>
+                       <tr class="hover:bg-teal-50">
                          <td class="text-sm text-teal-600">${e.summary}</td>
                          <td class="text-sm text-indigo-600 font-semibold">${start}–${end}</td>
                        </tr>
