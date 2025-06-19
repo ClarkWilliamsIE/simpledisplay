@@ -22,8 +22,15 @@
   </div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-6 flex-1">
+  <div class="max-w-7xl mx-auto px-6 flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Column - Calendar events -->
     <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+
+    <!-- Right Column - "What's On This Week" Box -->
+    <div id="this-week" class="bg-white p-6 rounded-lg shadow-xl border-2 border-teal-300">
+      <h2 class="text-2xl font-semibold mb-4 text-teal-500">What's On This Week</h2>
+      <div id="weekly-events" class="space-y-4"></div>
+    </div>
   </div>
 
   <script>
@@ -62,6 +69,8 @@
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
+      const weeklyContainer = document.getElementById('weekly-events');
+      let weeklyEvents = [];
 
       for (const cal of calendars) {
         // Card wrapper
@@ -101,6 +110,12 @@
                    ${events.map(e => {
                      const start = formatTime(e.start.dateTime || e.start.date);
                      const end   = formatTime(e.end.dateTime   || e.end.date);
+                     const eventDetails = {
+                       summary: e.summary,
+                       start: start,
+                       end: end,
+                     };
+                     weeklyEvents.push(eventDetails);  // Save event for the weekly list
                      return `
                        <tr class="hover:bg-teal-50">
                          <td class="text-sm text-teal-600">${e.summary}</td>
@@ -112,6 +127,18 @@
                </table>`
           }
         `;
+      }
+
+      // Render weekly events list
+      if (weeklyEvents.length > 0) {
+        weeklyEvents.forEach(event => {
+          const eventItem = document.createElement('div');
+          eventItem.className = 'text-sm text-teal-600';
+          eventItem.innerHTML = `<strong>${event.summary}</strong><br/>${event.start} – ${event.end}`;
+          weeklyContainer.appendChild(eventItem);
+        });
+      } else {
+        weeklyContainer.innerHTML = '<p class="text-gray-500">No events this week.</p>';
       }
     }
 
