@@ -34,7 +34,8 @@
       <h3 id="modal-summary" class="font-bold text-xl mb-2"></h3>
       <p id="modal-time" class="mb-2"></p>
       <p id="modal-location" class="mb-2"></p>
-      <p id="modal-description"></p>
+      <!-- changed to div so innerHTML can render <p> tags -->
+      <div id="modal-description" class="whitespace-pre-wrap text-sm"></div>
     </div>
   </div>
 
@@ -125,7 +126,7 @@
               document.getElementById('modal-summary').textContent    = e.summary || 'No title';
               document.getElementById('modal-time')  .textContent    = `${start} - ${end}`;
               document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-              document.getElementById('modal-description').textContent = e.description || 'No description provided';
+              document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
               document.getElementById('event-modal').checked = true;
             });
             tbody.appendChild(row);
@@ -170,7 +171,7 @@
             document.getElementById('modal-summary').textContent    = e.summary || 'No title';
             document.getElementById('modal-time')  .textContent    = `${start}`;
             document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-            document.getElementById('modal-description').textContent = e.description || 'No description provided';
+            document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
             document.getElementById('event-modal').checked = true;
           });
           ul.appendChild(li);
@@ -183,3 +184,4 @@
   </script>
 </body>
 </html>
+
