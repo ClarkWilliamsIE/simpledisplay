@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Library "What’s On - Paraparaumu Library" Display</title>
+  <title>Library “What’s On - Paraparaumu Library” Display</title>
 
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -40,7 +40,7 @@
 
   <script>
     // === CONFIG ===
-    const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
+    const API_KEY = 'YOUR_API_KEY_HERE';
     const calendars = [
       { id: 'paraparaumumake@gmail.com', name: 'Shared space' },
       { id: '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com', name: 'Makerspace' },
@@ -56,6 +56,10 @@
 
     // === HELPERS ===
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const stripTags = html => {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || '';
+    };
 
     async function fetchEvents(id) {
       const now     = new Date();
@@ -94,7 +98,7 @@
           <div class="divider"></div>
         `;
 
-        if (events.length === 0) {
+        if (!events.length) {
           const p = document.createElement('p');
           p.className = 'text-gray-500 text-center py-4';
           p.textContent = 'No events today';
@@ -114,7 +118,7 @@
 
           events.forEach(e => {
             const start = formatTime(e.start.dateTime || e.start.date);
-            const end   = formatTime(e.end  .dateTime || e.end  .date);
+            const end   = formatTime(e.end.dateTime   || e.end.date);
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
@@ -125,7 +129,7 @@
               document.getElementById('modal-summary').textContent    = e.summary || 'No title';
               document.getElementById('modal-time')  .textContent    = `${start} - ${end}`;
               document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-              document.getElementById('modal-description').textContent = e.description || 'No description provided';
+              document.getElementById('modal-description').textContent = e.description ? stripTags(e.description) : 'No description provided';
               document.getElementById('event-modal').checked = true;
             });
             tbody.appendChild(row);
@@ -150,7 +154,7 @@
         <div class="divider"></div>
       `;
 
-      if (allEvents.length === 0) {
+      if (!allEvents.length) {
         const p = document.createElement('p');
         p.className = 'text-gray-500 text-center py-4';
         p.textContent = 'No events today';
@@ -158,6 +162,7 @@
       } else {
         const ul = document.createElement('ul');
         ul.className = 'space-y-2';
+
         allEvents.forEach(e => {
           const start = formatTime(e.start.dateTime || e.start.date);
           const li = document.createElement('li');
@@ -170,11 +175,13 @@
             document.getElementById('modal-summary').textContent    = e.summary || 'No title';
             document.getElementById('modal-time')  .textContent    = `${start}`;
             document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-            document.getElementById('modal-description').textContent = e.description || 'No description provided';
+            document.getElementById('modal-description').textContent = e.description ? stripTags(e.description) : 'No description provided';
             document.getElementById('event-modal').checked = true;
           });
+
           ul.appendChild(li);
         });
+
         allBody.appendChild(ul);
       }
     }
