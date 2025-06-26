@@ -73,6 +73,15 @@
       return (await res.json()).items || [];
     }
 
+    // Populate and open the modal
+    function openModal(e, start, end=null) {
+      document.getElementById('modal-summary').textContent    = e.summary || 'No title';
+      document.getElementById('modal-time')  .textContent    = end ? `${start} - ${end}` : start;
+      document.getElementById('modal-location').textContent  = e.location || 'No location specified';
+      document.getElementById('modal-description').textContent = e.description ? stripTags(e.description) : 'No description provided';
+      document.getElementById('event-modal').checked = true;
+    }
+
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
@@ -125,13 +134,7 @@
               <td class="text-sm text-teal-600">${e.summary}</td>
               <td class="text-sm text-indigo-600 font-semibold">${start} - ${end}</td>
             `;
-            row.addEventListener('click', () => {
-              document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-              document.getElementById('modal-time')  .textContent    = `${start} - ${end}`;
-              document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-              document.getElementById('modal-description').textContent = e.description ? stripTags(e.description) : 'No description provided';
-              document.getElementById('event-modal').checked = true;
-            });
+            row.addEventListener('click', () => openModal(e, start, end));
             tbody.appendChild(row);
           });
 
@@ -171,14 +174,7 @@
             <span>${e.summary}</span>
             <span class="font-semibold text-indigo-600">${start}</span>
           `;
-          li.addEventListener('click', () => {
-            document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-            document.getElementById('modal-time')  .textContent    = `${start}`;
-            document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-            document.getElementById('modal-description').textContent = e.description ? stripTags(e.description) : 'No description provided';
-            document.getElementById('event-modal').checked = true;
-          });
-
+          li.addEventListener('click', () => openModal(e, start));
           ul.appendChild(li);
         });
 
