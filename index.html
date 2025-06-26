@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -14,7 +14,7 @@
   <!-- Navbar with current date -->
   <div class="navbar bg-transparent text-white mb-6">
     <div class="flex-1 px-6">
-      <span class="text-3xl font-extrabold">Paraparaumu Library Schedule</span>
+      <span class="text-3xl font-extrabold">📅 Library Schedule</span>
     </div>
     <div class="px-6">
       <span id="current-date" class="text-lg"></span>
@@ -34,7 +34,6 @@
       <h3 id="modal-summary" class="font-bold text-xl mb-2"></h3>
       <p id="modal-time" class="mb-2"></p>
       <p id="modal-location" class="mb-2"></p>
-      <!-- changed to div so innerHTML can render <p> tags -->
       <div id="modal-description" class="whitespace-pre-wrap text-sm"></div>
     </div>
   </div>
@@ -77,7 +76,7 @@
 
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
         container.appendChild(card);
 
         const events = await fetchEvents(cal.id);
@@ -88,7 +87,7 @@
         card.appendChild(body);
 
         body.innerHTML = `
-          <h2 class="card-title mb-2 text-teal-500">
+          <h2 class="card-title mb-2 text-black">
             ${cal.name}
             <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
           </h2>
@@ -106,10 +105,10 @@
           table.innerHTML = `
             <thead>
               <tr>
-              <th class="text-sm font-semibold text-black">Event</th>
-              <th class="text-sm font-semibold text-black">Time</th>
+                <th class="text-sm font-semibold text-black">Event</th>
+                <th class="text-sm font-semibold text-black">Time</th>
               </tr>
-              </thead>
+            </thead>
           `;
           const tbody = document.createElement('tbody');
 
@@ -119,8 +118,8 @@
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
-              <td class="text-sm text-teal-600">${e.summary}</td>
-              <td class="text-sm text-indigo-600 font-semibold">${start} - ${end}</td>
+              <td class="text-sm text-black">${e.summary}</td>
+              <td class="text-sm font-semibold text-black">${start} - ${end}</td>
             `;
             row.addEventListener('click', () => {
               document.getElementById('modal-summary').textContent    = e.summary || 'No title';
@@ -139,7 +138,7 @@
 
       // All Events card
       const allCard = document.createElement('div');
-      allCard.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+      allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
       container.appendChild(allCard);
 
       const allBody = document.createElement('div');
@@ -147,7 +146,7 @@
       allCard.appendChild(allBody);
 
       allBody.innerHTML = `
-        <h2 class="card-title text-xl font-bold mb-4 text-teal-500">All Events</h2>
+        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events</h2>
         <div class="divider"></div>
       `;
 
@@ -162,10 +161,10 @@
         allEvents.forEach(e => {
           const start = formatTime(e.start.dateTime || e.start.date);
           const li = document.createElement('li');
-          li.className = 'flex justify-between text-sm text-teal-600 cursor-pointer hover:bg-teal-50 p-2 rounded';
+          li.className = 'flex justify-between text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
           li.innerHTML = `
             <span>${e.summary}</span>
-            <span class="font-semibold text-indigo-600">${start}</span>
+            <span class="font-semibold text-black">${start}</span>
           `;
           li.addEventListener('click', () => {
             document.getElementById('modal-summary').textContent    = e.summary || 'No title';
