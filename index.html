@@ -20,6 +20,12 @@
       overflow-wrap: break-word; /* Ensures long words wrap properly */
       white-space: normal; /* Allows the title to wrap onto the next line */
     }
+
+    .event-title {
+      word-wrap: break-word; /* Breaks long words into multiple lines */
+      overflow-wrap: break-word; /* Ensures wrapping for long words */
+      white-space: normal; /* Allows multi-line wrapping for long titles */
+    }
   </style>
 </head>
 <body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
@@ -131,7 +137,7 @@
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
-              <td class="text-sm text-black">${e.summary}</td>
+              <td class="event-title text-sm text-black">${e.summary}</td>
               <td class="text-sm font-semibold text-black">${start} - ${end}</td>
             `;
             row.addEventListener('click', () => {
