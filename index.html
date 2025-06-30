@@ -77,13 +77,26 @@
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     async function fetchEvents(id) {
-      const now     = new Date();
-      const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
-      const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
+      const now = new Date();
+      
+      // Get the start of the week (Sunday)
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Set to Sunday (start of the week)
+      startOfWeek.setHours(0, 0, 0, 0); // Start time at 00:00:00
+      
+      // Get the end of the week (Saturday)
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // Set to Saturday (end of the week)
+      endOfWeek.setHours(23, 59, 59, 999); // End time at 23:59:59
+
+      const timeMin = startOfWeek.toISOString();
+      const timeMax = endOfWeek.toISOString();
+      
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
                 + `?key=${API_KEY}`
                 + `&timeMin=${timeMin}&timeMax=${timeMax}`
                 + `&singleEvents=true&orderBy=startTime`;
+      
       const res = await fetch(url);
       return (await res.json()).items || [];
     }
@@ -116,7 +129,7 @@
         if (events.length === 0) {
           const p = document.createElement('p');
           p.className = 'text-gray-500 text-center py-4';
-          p.textContent = 'No events today';
+          p.textContent = 'No events this week';
           body.appendChild(p);
         } else {
           const table = document.createElement('table');
@@ -165,14 +178,14 @@
       allCard.appendChild(allBody);
 
       allBody.innerHTML = `
-        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events</h2>
+        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events This Week</h2>
         <div class="divider"></div>
       `;
 
       if (allEvents.length === 0) {
         const p = document.createElement('p');
         p.className = 'text-gray-500 text-center py-4';
-        p.textContent = 'No events today';
+        p.textContent = 'No events this week';
         allBody.appendChild(p);
       } else {
         const ul = document.createElement('ul');
