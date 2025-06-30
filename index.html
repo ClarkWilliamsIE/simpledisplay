@@ -76,7 +76,19 @@
     // === HELPERS ===
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    async function fetchEvents(id) {
+    async function fetchEventsForToday(id) {
+      const now     = new Date();
+      const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
+      const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
+                + `?key=${API_KEY}`
+                + `&timeMin=${timeMin}&timeMax=${timeMax}`
+                + `&singleEvents=true&orderBy=startTime`;
+      const res = await fetch(url);
+      return (await res.json()).items || [];
+    }
+
+    async function fetchEventsForThisWeek(id) {
       const now = new Date();
       
       // Get the start of the week (Sunday)
@@ -106,12 +118,13 @@
       const container = document.getElementById('rooms');
       let allEvents = [];
 
+      // Fetch events for each calendar (for today)
       for (const cal of calendars) {
         const card = document.createElement('div');
         card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
         container.appendChild(card);
 
-        const events = await fetchEvents(cal.id);
+        const events = await fetchEventsForToday(cal.id);
         allEvents = allEvents.concat(events);
 
         const body = document.createElement('div');
@@ -129,7 +142,7 @@
         if (events.length === 0) {
           const p = document.createElement('p');
           p.className = 'text-gray-500 text-center py-4';
-          p.textContent = 'No events this week';
+          p.textContent = 'No events today';
           body.appendChild(p);
         } else {
           const table = document.createElement('table');
@@ -168,7 +181,7 @@
         }
       }
 
-      // All Events card
+      // All Events card for this week
       const allCard = document.createElement('div');
       allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
       container.appendChild(allCard);
@@ -215,4 +228,5 @@
   </script>
 </body>
 </html>
+
 
