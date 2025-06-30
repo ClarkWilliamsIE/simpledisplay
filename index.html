@@ -218,26 +218,40 @@
         p.textContent = 'No events this week';
         allBody.appendChild(p);
       } else {
-        const ul = document.createElement('ul');
-        ul.className = 'space-y-2';
+        const eventsMap = {}; // To group events by their title
+
+        // Group events by title
         eventsThisWeek.forEach(e => {
+          const title = e.summary;
           const start = formatTime(e.start.dateTime || e.start.date);
+          
+          if (!eventsMap[title]) {
+            eventsMap[title] = [];
+          }
+          
+          eventsMap[title].push({ start, e });
+        });
+
+        // Display each event group
+        for (const [title, occurrences] of Object.entries(eventsMap)) {
           const li = document.createElement('li');
-          li.className = 'flex justify-between text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
+          li.className = 'text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
           li.innerHTML = `
-            <span>${e.summary}</span>
-            <span class="font-semibold text-black">${start}</span>
+            <span class="font-bold">${title}</span>
           `;
           li.addEventListener('click', () => {
-            document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-            document.getElementById('modal-time')  .textContent    = `${start}`;
-            document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-            document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
+            const modalContent = occurrences.map(({ start, e }) => {
+              return `<div><strong>When:</strong> ${start}</div>`;
+            }).join('');
+            
+            document.getElementById('modal-summary').innerHTML = `${title}`;
+            document.getElementById('modal-time').innerHTML = modalContent;
+            document.getElementById('modal-location').textContent  = occurrences[0].e.location || 'No location specified';
+            document.getElementById('modal-description').innerHTML = occurrences[0].e.description || '<p>No description provided</p>';
             document.getElementById('event-modal').checked = true;
           });
-          ul.appendChild(li);
-        });
-        allBody.appendChild(ul);
+          allBody.appendChild(li);
+        }
       }
     }
 
