@@ -80,7 +80,12 @@
       new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     // === HELPERS ===
-    const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formatDateTime = ds => {
+      const date = new Date(ds);
+      const day = date.toLocaleString('en-GB', { weekday: 'long' }); // Get the day of the week
+      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Format the time
+      return `${day}, ${time}`; // Combine the day and time
+    };
 
     // Fetch events for today
     async function fetchEventsForToday(id) {
@@ -173,8 +178,8 @@
           const tbody = document.createElement('tbody');
 
           events.forEach(e => {
-            const start = formatTime(e.start.dateTime || e.start.date);
-            const end   = formatTime(e.end  .dateTime || e.end  .date);
+            const start = formatDateTime(e.start.dateTime || e.start.date);
+            const end   = formatDateTime(e.end  .dateTime || e.end  .date);
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
@@ -223,7 +228,7 @@
         // Group events by title
         eventsThisWeek.forEach(e => {
           const title = e.summary;
-          const start = formatTime(e.start.dateTime || e.start.date);
+          const start = formatDateTime(e.start.dateTime || e.start.date);
           
           if (!eventsMap[title]) {
             eventsMap[title] = [];
