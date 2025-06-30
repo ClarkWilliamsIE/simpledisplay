@@ -90,7 +90,8 @@
     }
 
     // Fetch events for the entire week
-    async function fetchEventsForThisWeek(id) {
+    async function fetchEventsForThisWeek() {
+      const allEvents = [];
       const now = new Date();
       
       // Get the start of the week (Sunday)
@@ -105,14 +106,20 @@
 
       const timeMin = startOfWeek.toISOString();
       const timeMax = endOfWeek.toISOString();
-      
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
-                + `?key=${API_KEY}`
-                + `&timeMin=${timeMin}&timeMax=${timeMax}`
-                + `&singleEvents=true&orderBy=startTime`;
-      
-      const res = await fetch(url);
-      return (await res.json()).items || [];
+
+      // Fetch events from all calendars for the week
+      for (const cal of calendars) {
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
+                  + `?key=${API_KEY}`
+                  + `&timeMin=${timeMin}&timeMax=${timeMax}`
+                  + `&singleEvents=true&orderBy=startTime`;
+
+        const res = await fetch(url);
+        const events = (await res.json()).items || [];
+        allEvents.push(...events);
+      }
+
+      return allEvents;
     }
 
     // === RENDER ===
@@ -197,7 +204,7 @@
         <div class="divider"></div>
       `;
 
-      const eventsThisWeek = await fetchEventsForThisWeek(calendars[0].id);  // Use any calendar's ID here, it can be the first one.
+      const eventsThisWeek = await fetchEventsForThisWeek();  // Use all calendars here.
 
       if (eventsThisWeek.length === 0) {
         const p = document.createElement('p');
@@ -232,4 +239,3 @@
   </script>
 </body>
 </html>
-
