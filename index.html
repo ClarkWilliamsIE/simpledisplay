@@ -76,6 +76,7 @@
     // === HELPERS ===
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Fetch events for today
     async function fetchEventsForToday(id) {
       const now     = new Date();
       const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
@@ -88,6 +89,7 @@
       return (await res.json()).items || [];
     }
 
+    // Fetch events for the entire week
     async function fetchEventsForThisWeek(id) {
       const now = new Date();
       
@@ -195,7 +197,9 @@
         <div class="divider"></div>
       `;
 
-      if (allEvents.length === 0) {
+      const eventsThisWeek = await fetchEventsForThisWeek(calendars[0].id);  // Use any calendar's ID here, it can be the first one.
+
+      if (eventsThisWeek.length === 0) {
         const p = document.createElement('p');
         p.className = 'text-gray-500 text-center py-4';
         p.textContent = 'No events this week';
@@ -203,7 +207,7 @@
       } else {
         const ul = document.createElement('ul');
         ul.className = 'space-y-2';
-        allEvents.forEach(e => {
+        eventsThisWeek.forEach(e => {
           const start = formatTime(e.start.dateTime || e.start.date);
           const li = document.createElement('li');
           li.className = 'flex justify-between text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
@@ -228,5 +232,4 @@
   </script>
 </body>
 </html>
-
 
