@@ -2,62 +2,53 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Library Dashboard for iPad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Library "What’s On - Paraparaumu Library" Display</title>
 
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
 
   <style>
     .card-body {
       overflow: hidden;
-      max-height: 300px;
-      -webkit-overflow-scrolling: touch;
+      max-height: 400px; /* Keeps the height consistent across all cards */
+    }
+
+    /* Specific style for the 'All Events This Week' card to make it scrollable */
+    .all-events-body {
+      max-height: 600px; /* Set the max height for 'All Events' card */
+      overflow-y: auto; /* Adds vertical scrolling when content overflows */
     }
 
     .card-title {
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
+      word-wrap: break-word; /* Ensures long words break to next line */
+      overflow-wrap: break-word; /* Ensures long words wrap properly */
+      white-space: normal; /* Allows the title to wrap onto the next line */
     }
 
     .event-title {
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
-    }
-    
-    /* Media Queries for iPad */
-    @media (max-width: 1024px) {
-      body {
-        font-size: 14px;
-      }
-      .card-body {
-        max-height: 250px;
-      }
-      .card-title {
-        font-size: 1.25rem;
-      }
+      word-wrap: break-word; /* Breaks long words into multiple lines */
+      overflow-wrap: break-word; /* Ensures wrapping for long words */
+      white-space: normal; /* Allows multi-line wrapping for long titles */
     }
   </style>
 </head>
-<body class="bg-teal-500 text-white min-h-screen flex flex-col">
+<body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
 
-  <!-- Navbar -->
-  <div class="navbar bg-transparent text-white mb-6 p-4">
-    <div class="flex-1 text-xl">
-      <span class="font-extrabold">Paraparaumu Library Schedule</span>
+  <!-- Navbar with current date -->
+  <div class="navbar bg-transparent text-white mb-6">
+    <div class="flex-1 px-6">
+      <span class="text-3xl font-extrabold">Paraparaumu Library Schedule</span>
     </div>
-    <div class="px-4 text-sm">
-      <span id="current-date"></span>
+    <div class="px-6">
+      <span id="current-date" class="text-lg"></span>
     </div>
   </div>
 
   <!-- Main Content -->
-  <div class="container mx-auto px-6 flex-1">
-    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
-      <!-- Cards will be dynamically inserted here -->
-    </div>
+  <div class="max-w-7xl mx-auto px-6 flex-1">
+    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
   </div>
 
   <!-- Modal for event details -->
@@ -74,11 +65,14 @@
 
   <script>
     // === CONFIG ===
-    const API_KEY = 'YOUR_API_KEY';
+    const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
     const calendars = [
       { id: 'paraparaumumake@gmail.com', name: 'Shared space' },
-      { id: '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com', name: 'Makerspace' }
-      // Add more calendars if needed
+      { id: '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com', name: 'Makerspace' },
+      { id: 'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com', name: 'Discussion' },
+      { id: '9d751487e4a33f27971ca1b54bd27d82b56d39278aabd6bcb562c431979396a2@group.calendar.google.com', name: 'Learning Centre' },
+      { id: 'bf9774fd9a1f9cf44aff3d1ee97ef2a5e30789ef17f99ba846c3a780850f7e7a@group.calendar.google.com', name: 'Tamariki' },
+      { id: '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com', name: 'Tech Lab' },
     ];
 
     // === HEADER DATE ===
@@ -101,6 +95,39 @@
       return (await res.json()).items || [];
     }
 
+    // Fetch events for the entire week
+    async function fetchEventsForThisWeek() {
+      const allEvents = [];
+      const now = new Date();
+      
+      // Get the start of the week (Sunday)
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay()); // Set to Sunday (start of the week)
+      startOfWeek.setHours(0, 0, 0, 0); // Start time at 00:00:00
+      
+      // Get the end of the week (Saturday)
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // Set to Saturday (end of the week)
+      endOfWeek.setHours(23, 59, 59, 999); // End time at 23:59:59
+
+      const timeMin = startOfWeek.toISOString();
+      const timeMax = endOfWeek.toISOString();
+
+      // Fetch events from all calendars for the week
+      for (const cal of calendars) {
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
+                  + `?key=${API_KEY}`
+                  + `&timeMin=${timeMin}&timeMax=${timeMax}`
+                  + `&singleEvents=true&orderBy=startTime`;
+
+        const res = await fetch(url);
+        const events = (await res.json()).items || [];
+        allEvents.push(...events);
+      }
+
+      return allEvents;
+    }
+
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
@@ -109,7 +136,7 @@
       // Fetch events for each calendar (for today)
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
         container.appendChild(card);
 
         const events = await fetchEventsForToday(cal.id);
@@ -122,7 +149,7 @@
         body.innerHTML = `
           <h2 class="card-title mb-2 text-black">
             ${cal.name}
-            <span class="badge badge-info">${events.length} ${events.length === 1 ? 'event' : 'events'}</span>
+            <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
           </h2>
           <div class="divider"></div>
         `;
@@ -147,7 +174,7 @@
 
           events.forEach(e => {
             const start = formatTime(e.start.dateTime || e.start.date);
-            const end   = formatTime(e.end.dateTime || e.end.date);
+            const end   = formatTime(e.end  .dateTime || e.end  .date);
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
@@ -167,6 +194,50 @@
           table.appendChild(tbody);
           body.appendChild(table);
         }
+      }
+
+      // All Events card for this week
+      const allCard = document.createElement('div');
+      allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+      container.appendChild(allCard);
+
+      const allBody = document.createElement('div');
+      allBody.className = 'card-body p-6 all-events-body';  // Add 'all-events-body' class here for scrolling
+      allCard.appendChild(allBody);
+
+      allBody.innerHTML = `
+        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events This Week</h2>
+        <div class="divider"></div>
+      `;
+
+      const eventsThisWeek = await fetchEventsForThisWeek();  // Use all calendars here.
+
+      if (eventsThisWeek.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'text-gray-500 text-center py-4';
+        p.textContent = 'No events this week';
+        allBody.appendChild(p);
+      } else {
+        const ul = document.createElement('ul');
+        ul.className = 'space-y-2';
+        eventsThisWeek.forEach(e => {
+          const start = formatTime(e.start.dateTime || e.start.date);
+          const li = document.createElement('li');
+          li.className = 'flex justify-between text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
+          li.innerHTML = `
+            <span>${e.summary}</span>
+            <span class="font-semibold text-black">${start}</span>
+          `;
+          li.addEventListener('click', () => {
+            document.getElementById('modal-summary').textContent    = e.summary || 'No title';
+            document.getElementById('modal-time')  .textContent    = `${start}`;
+            document.getElementById('modal-location').textContent  = e.location || 'No location specified';
+            document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
+            document.getElementById('event-modal').checked = true;
+          });
+          ul.appendChild(li);
+        });
+        allBody.appendChild(ul);
       }
     }
 
