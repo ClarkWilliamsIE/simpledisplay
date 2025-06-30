@@ -8,6 +8,19 @@
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
+
+  <style>
+    .card-body {
+      overflow: hidden;
+      max-height: 400px; /* Adjust height as necessary */
+    }
+
+    .card-title {
+      word-wrap: break-word; /* Ensures long words break to next line */
+      overflow-wrap: break-word; /* Ensures long words wrap properly */
+      white-space: normal; /* Allows the title to wrap onto the next line */
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
 
