@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Library "What’s On - Paraparaumu Library" Display</title>
+  <title>Library “What’s On - Paraparaumu Library” Display</title>
 
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     .card-body {
@@ -23,14 +26,14 @@
 
     .card-title {
       word-wrap: break-word; /* Ensures long words break to next line */
-      overflow-wrap: break-word; /* Ensures long words wrap properly */
-      white-space: normal; /* Allows the title to wrap onto the next line */
+      overflow-wrap: break-word;
+      white-space: normal;
     }
 
     .event-title {
-      word-wrap: break-word; /* Breaks long words into multiple lines */
-      overflow-wrap: break-word; /* Ensures wrapping for long words */
-      white-space: normal; /* Allows multi-line wrapping for long titles */
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
     }
   </style>
 </head>
@@ -48,7 +51,21 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 flex-1">
+
+    <!-- Dynamic room cards go here -->
     <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+
+    <!-- Static Card with Responsive Chart -->
+    <div class="card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out mt-6">
+      <div class="card-body p-6">
+        <h2 class="card-title text-black mb-2">Library Attendance Chart</h2>
+        <div class="divider"></div>
+        <div class="relative w-full h-64">
+          <canvas id="attendanceChart" class="w-full h-full"></canvas>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Modal for event details -->
@@ -82,9 +99,9 @@
     // === HELPERS ===
     const formatDateTime = ds => {
       const date = new Date(ds);
-      const day = date.toLocaleString('en-GB', { weekday: 'long' }); // Get the day of the week
-      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Format the time
-      return `${day}, ${time}`; // Combine the day and time
+      const day = date.toLocaleString('en-GB', { weekday: 'long' });
+      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `${day}, ${time}`;
     };
 
     // Fetch events for today
@@ -104,32 +121,24 @@
     async function fetchEventsForThisWeek() {
       const allEvents = [];
       const now = new Date();
-      
-      // Get the start of the week (Sunday)
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay()); // Set to Sunday (start of the week)
-      startOfWeek.setHours(0, 0, 0, 0); // Start time at 00:00:00
-      
-      // Get the end of the week (Saturday)
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
       const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6); // Set to Saturday (end of the week)
-      endOfWeek.setHours(23, 59, 59, 999); // End time at 23:59:59
-
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
       const timeMin = startOfWeek.toISOString();
       const timeMax = endOfWeek.toISOString();
 
-      // Fetch events from all calendars for the week
       for (const cal of calendars) {
         const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
                   + `?key=${API_KEY}`
                   + `&timeMin=${timeMin}&timeMax=${timeMax}`
                   + `&singleEvents=true&orderBy=startTime`;
-
         const res = await fetch(url);
         const events = (await res.json()).items || [];
         allEvents.push(...events);
       }
-
       return allEvents;
     }
 
@@ -138,7 +147,6 @@
       const container = document.getElementById('rooms');
       let allEvents = [];
 
-      // Fetch events for each calendar (for today)
       for (const cal of calendars) {
         const card = document.createElement('div');
         card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
@@ -201,13 +209,13 @@
         }
       }
 
-      // All Events card for this week
+      // All Events card
       const allCard = document.createElement('div');
       allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
       container.appendChild(allCard);
 
       const allBody = document.createElement('div');
-      allBody.className = 'card-body p-6 all-events-body';  // Add 'all-events-body' class here for scrolling
+      allBody.className = 'card-body p-6 all-events-body';
       allCard.appendChild(allBody);
 
       allBody.innerHTML = `
@@ -215,7 +223,7 @@
         <div class="divider"></div>
       `;
 
-      const eventsThisWeek = await fetchEventsForThisWeek();  // Use all calendars here.
+      const eventsThisWeek = await fetchEventsForThisWeek();
 
       if (eventsThisWeek.length === 0) {
         const p = document.createElement('p');
@@ -223,36 +231,24 @@
         p.textContent = 'No events this week';
         allBody.appendChild(p);
       } else {
-        const eventsMap = {}; // To group events by their title
-
-        // Group events by title
+        const eventsMap = {};
         eventsThisWeek.forEach(e => {
           const title = e.summary;
           const start = formatDateTime(e.start.dateTime || e.start.date);
-          
-          if (!eventsMap[title]) {
-            eventsMap[title] = [];
-          }
-          
+          if (!eventsMap[title]) eventsMap[title] = [];
           eventsMap[title].push({ start, e });
         });
 
-        // Display each event group
         for (const [title, occurrences] of Object.entries(eventsMap)) {
           const li = document.createElement('li');
           li.className = 'text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
-          li.innerHTML = `
-            <span class="font-bold">${title}</span>
-          `;
+          li.innerHTML = `<span class="font-bold">${title}</span>`;
           li.addEventListener('click', () => {
-            const modalContent = occurrences.map(({ start, e }) => {
-              return `<div><strong>When:</strong> ${start}</div>`;
-            }).join('');
-            
-            document.getElementById('modal-summary').innerHTML = `${title}`;
-            document.getElementById('modal-time').innerHTML = modalContent;
-            document.getElementById('modal-location').textContent  = occurrences[0].e.location || 'No location specified';
-            document.getElementById('modal-description').innerHTML = occurrences[0].e.description || '<p>No description provided</p>';
+            const modalContent = occurrences.map(({ start }) => `<div><strong>When:</strong> ${start}</div>`).join('');
+            document.getElementById('modal-summary').innerHTML    = title;
+            document.getElementById('modal-time').innerHTML       = modalContent;
+            document.getElementById('modal-location').textContent = occurrences[0].e.location || 'No location specified';
+            document.getElementById('modal-description').innerHTML= occurrences[0].e.description || '<p>No description provided</p>';
             document.getElementById('event-modal').checked = true;
           });
           allBody.appendChild(li);
@@ -261,6 +257,34 @@
     }
 
     init();
+
+    // === Chart.js Initialization ===
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon','Tue','Wed','Thu','Fri'],
+        datasets: [{
+          label: 'Visitors',
+          data: [30,45,60,50,75],
+          backgroundColor: 'rgba(13,148,136,0.6)',
+          borderColor:     'rgba(13,148,136,1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true }
+        },
+        plugins: {
+          legend: {
+            labels: { color: '#000' }
+          }
+        }
+      }
+    });
   </script>
 </body>
 </html>
