@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -8,13 +8,32 @@
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
+
+  <style>
+    .card-body {
+      overflow: hidden;
+      max-height: 400px; /* Adjust height as necessary */
+    }
+
+    .card-title {
+      word-wrap: break-word; /* Ensures long words break to next line */
+      overflow-wrap: break-word; /* Ensures long words wrap properly */
+      white-space: normal; /* Allows the title to wrap onto the next line */
+    }
+
+    .event-title {
+      word-wrap: break-word; /* Breaks long words into multiple lines */
+      overflow-wrap: break-word; /* Ensures wrapping for long titles */
+      white-space: normal; /* Allows multi-line wrapping for long titles */
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col">
 
   <!-- Navbar with current date -->
   <div class="navbar bg-transparent text-white mb-6">
     <div class="flex-1 px-6">
-      <span class="text-3xl font-extrabold">📅 Library Schedule</span>
+      <span class="text-3xl font-extrabold">Paraparaumu Library Schedule</span>
     </div>
     <div class="px-6">
       <span id="current-date" class="text-lg"></span>
@@ -34,7 +53,7 @@
       <h3 id="modal-summary" class="font-bold text-xl mb-2"></h3>
       <p id="modal-time" class="mb-2"></p>
       <p id="modal-location" class="mb-2"></p>
-      <p id="modal-description"></p>
+      <div id="modal-description" class="whitespace-pre-wrap text-sm"></div>
     </div>
   </div>
 
@@ -57,7 +76,8 @@
     // === HELPERS ===
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    async function fetchEvents(id) {
+    // Fetch events for today
+    async function fetchEventsForToday(id) {
       const now     = new Date();
       const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
       const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
@@ -69,32 +89,62 @@
       return (await res.json()).items || [];
     }
 
+    // Fetch events for the entire week
+    async function fetchEventsForThisWeek() {
+      const allEvents = [];
+      const now = new Date();
+      
+      // start of week (Sunday)
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      // end of week (Saturday)
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const timeMin = startOfWeek.toISOString();
+      const timeMax = endOfWeek.toISOString();
+
+      for (const cal of calendars) {
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
+                  + `?key=${API_KEY}`
+                  + `&timeMin=${timeMin}&timeMax=${timeMax}`
+                  + `&singleEvents=true&orderBy=startTime`;
+        const res = await fetch(url);
+        const events = (await res.json()).items || [];
+        allEvents.push(...events);
+      }
+
+      return allEvents;
+    }
+
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
-      let allEvents = [];
 
+      // per-calendar cards for today
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
         container.appendChild(card);
 
-        const events = await fetchEvents(cal.id);
-        allEvents = allEvents.concat(events);
+        const events = await fetchEventsForToday(cal.id);
 
         const body = document.createElement('div');
         body.className = 'card-body p-6';
         card.appendChild(body);
 
         body.innerHTML = `
-          <h2 class="card-title mb-2 text-teal-500">
+          <h2 class="card-title mb-2 text-black">
             ${cal.name}
-            <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
+            <span class="badge badge-info">${events.length} ${events.length === 1 ? 'event' : 'events'}</span>
           </h2>
           <div class="divider"></div>
         `;
 
-        if (events.length === 0) {
+        if (!events.length) {
           const p = document.createElement('p');
           p.className = 'text-gray-500 text-center py-4';
           p.textContent = 'No events today';
@@ -105,8 +155,8 @@
           table.innerHTML = `
             <thead>
               <tr>
-                <th class="text-sm font-semibold">Event</th>
-                <th class="text-sm font-semibold">Time</th>
+                <th class="text-sm font-semibold text-black">Event</th>
+                <th class="text-sm font-semibold text-black">Time</th>
               </tr>
             </thead>
           `;
@@ -114,18 +164,18 @@
 
           events.forEach(e => {
             const start = formatTime(e.start.dateTime || e.start.date);
-            const end   = formatTime(e.end  .dateTime || e.end  .date);
+            const end   = formatTime(e.end.dateTime   || e.end.date);
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
-              <td class="text-sm text-teal-600">${e.summary}</td>
-              <td class="text-sm text-indigo-600 font-semibold">${start} - ${end}</td>
+              <td class="event-title text-sm text-black">${e.summary}</td>
+              <td class="text-sm font-semibold text-black">${start} - ${end}</td>
             `;
             row.addEventListener('click', () => {
               document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-              document.getElementById('modal-time')  .textContent    = `${start} - ${end}`;
+              document.getElementById('modal-time').textContent      = `${start} - ${end}`;
               document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-              document.getElementById('modal-description').textContent = e.description || 'No description provided';
+              document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
               document.getElementById('event-modal').checked = true;
             });
             tbody.appendChild(row);
@@ -136,9 +186,9 @@
         }
       }
 
-      // All Events card
+      // All Events card for this week
       const allCard = document.createElement('div');
-      allCard.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+      allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
       container.appendChild(allCard);
 
       const allBody = document.createElement('div');
@@ -146,37 +196,70 @@
       allCard.appendChild(allBody);
 
       allBody.innerHTML = `
-        <h2 class="card-title text-xl font-bold mb-4 text-teal-500">All Events</h2>
+        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events This Week</h2>
         <div class="divider"></div>
       `;
 
-      if (allEvents.length === 0) {
+      const eventsThisWeek = await fetchEventsForThisWeek();
+
+      if (!eventsThisWeek.length) {
         const p = document.createElement('p');
         p.className = 'text-gray-500 text-center py-4';
-        p.textContent = 'No events today';
+        p.textContent = 'No events this week';
         allBody.appendChild(p);
-      } else {
+        return;
+      }
+
+      // group by date
+      const eventsByDate = eventsThisWeek.reduce((acc, e) => {
+        const dt = e.start.dateTime || e.start.date;
+        const dateKey = new Date(dt).toISOString().slice(0, 10);
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push(e);
+        return acc;
+      }, {});
+
+      // sort dates
+      const sortedDates = Object.keys(eventsByDate).sort();
+
+      // render each day
+      sortedDates.forEach(dateKey => {
+        const dayDate = new Date(dateKey);
+        const dayLabel = dayDate.toLocaleDateString([], {
+          weekday: 'long',
+          month:   'short',
+          day:     'numeric'
+        });
+
+        const header = document.createElement('h3');
+        header.className = 'text-lg font-semibold mt-4 mb-2 text-black';
+        header.textContent = dayLabel;
+        allBody.appendChild(header);
+
         const ul = document.createElement('ul');
         ul.className = 'space-y-2';
-        allEvents.forEach(e => {
+
+        eventsByDate[dateKey].forEach(e => {
           const start = formatTime(e.start.dateTime || e.start.date);
+          const end   = formatTime(e.end.dateTime   || e.end.date);
           const li = document.createElement('li');
-          li.className = 'flex justify-between text-sm text-teal-600 cursor-pointer hover:bg-teal-50 p-2 rounded';
+          li.className = 'flex justify-between text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
           li.innerHTML = `
             <span>${e.summary}</span>
-            <span class="font-semibold text-indigo-600">${start}</span>
+            <span class="font-semibold text-black">${start} - ${end}</span>
           `;
           li.addEventListener('click', () => {
             document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-            document.getElementById('modal-time')  .textContent    = `${start}`;
+            document.getElementById('modal-time').textContent      = `${start} - ${end}`;
             document.getElementById('modal-location').textContent  = e.location || 'No location specified';
-            document.getElementById('modal-description').textContent = e.description || 'No description provided';
+            document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
             document.getElementById('event-modal').checked = true;
           });
           ul.appendChild(li);
         });
+
         allBody.appendChild(ul);
-      }
+      });
     }
 
     init();
