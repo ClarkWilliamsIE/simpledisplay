@@ -3,37 +3,29 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Library “What’s On - Paraparaumu Library” Display</title>
+  <title>Library "What’s On - Paraparaumu Library" Display</title>
 
   <!-- Tailwind + DaisyUI via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     .card-body {
-      overflow: hidden;
-      max-height: 400px; /* Keeps the height consistent across all cards */
+      max-height: 400px; /* keep height consistent */
+      overflow: hidden;  /* hide vertical overflow on daily cards */
     }
 
-    /* Specific style for the 'All Events This Week' card to make it scrollable */
     .all-events-body {
-      max-height: 600px; /* Set the max height for 'All Events' card */
-      overflow-y: auto; /* Adds vertical scrolling when content overflows */
+      max-height: 600px; /* taller for week view */
+      overflow-y: auto;  /* vertical scroll for week list */
     }
 
-    .card-title {
-      word-wrap: break-word; /* Ensures long words break to next line */
+    .card-title,
+    .event-title,
+    th, td {
+      word-wrap: break-word;    /* break long words */
       overflow-wrap: break-word;
-      white-space: normal;
-    }
-
-    .event-title {
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
+      white-space: normal;      /* allow wrapping */
     }
   </style>
 </head>
@@ -51,21 +43,7 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 flex-1">
-
-    <!-- Dynamic room cards go here -->
     <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
-
-    <!-- Static Card with Responsive Chart -->
-    <div class="card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out mt-6">
-      <div class="card-body p-6">
-        <h2 class="card-title text-black mb-2">Library Attendance Chart</h2>
-        <div class="divider"></div>
-        <div class="relative w-full h-64">
-          <canvas id="attendanceChart" class="w-full h-full"></canvas>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- Modal for event details -->
@@ -97,18 +75,14 @@
       new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     // === HELPERS ===
-    const formatDateTime = ds => {
-      const date = new Date(ds);
-      const day = date.toLocaleString('en-GB', { weekday: 'long' });
-      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formatDateTime = iso => {
+      const d = new Date(iso);
+      const day = d.toLocaleString('en-GB', { weekday: 'long' });
+      const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       return `${day}, ${time}`;
     };
 
-    // Fetch events for today
-    async function fetchEventsForToday(id) {
-      const now     = new Date();
-      const timeMin = new Date(now.setHours(0,0,0,0)).toISOString();
-      const timeMax = new Date(now.setHours(23,59,59,999)).toISOString();
+    async function fetchEvents(id, timeMin, timeMax) {
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
                 + `?key=${API_KEY}`
                 + `&timeMin=${timeMin}&timeMax=${timeMax}`
@@ -117,175 +91,150 @@
       return (await res.json()).items || [];
     }
 
-    // Fetch events for the entire week
-    async function fetchEventsForThisWeek() {
-      const allEvents = [];
+    async function fetchEventsForToday(id) {
       const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-      const timeMin = startOfWeek.toISOString();
-      const timeMax = endOfWeek.toISOString();
+      const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      const timeMax = new Date(now.setHours(23, 59, 59, 999)).toISOString();
+      return fetchEvents(id, timeMin, timeMax);
+    }
 
+    async function fetchEventsForWeek() {
+      const now = new Date();
+      const start = new Date(now);
+      start.setDate(now.getDate() - now.getDay());
+      start.setHours(0,0,0,0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23,59,59,999);
+      const timeMin = start.toISOString();
+      const timeMax = end.toISOString();
+
+      let all = [];
       for (const cal of calendars) {
-        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
-                  + `?key=${API_KEY}`
-                  + `&timeMin=${timeMin}&timeMax=${timeMax}`
-                  + `&singleEvents=true&orderBy=startTime`;
-        const res = await fetch(url);
-        const events = (await res.json()).items || [];
-        allEvents.push(...events);
+        const items = await fetchEvents(cal.id, timeMin, timeMax);
+        all = all.concat(items);
       }
-      return allEvents;
+      return all;
     }
 
     // === RENDER ===
     async function init() {
       const container = document.getElementById('rooms');
-      let allEvents = [];
+      let weekEvents = [];
 
+      // daily cards
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
         container.appendChild(card);
-
-        const events = await fetchEventsForToday(cal.id);
-        allEvents = allEvents.concat(events);
 
         const body = document.createElement('div');
         body.className = 'card-body p-6';
         card.appendChild(body);
 
+        const events = await fetchEventsForToday(cal.id);
+        weekEvents = weekEvents.concat(events);
+
         body.innerHTML = `
           <h2 class="card-title mb-2 text-black">
             ${cal.name}
-            <span class="badge badge-info">${events.length} ${events.length===1?'event':'events'}</span>
+            <span class="badge badge-info">${events.length} ${events.length === 1 ? 'event' : 'events'}</span>
           </h2>
           <div class="divider"></div>
         `;
 
-        if (events.length === 0) {
+        if (!events.length) {
           const p = document.createElement('p');
           p.className = 'text-gray-500 text-center py-4';
           p.textContent = 'No events today';
           body.appendChild(p);
         } else {
-          const table = document.createElement('table');
-          table.className = 'table w-full';
-          table.innerHTML = `
-            <thead>
-              <tr>
-                <th class="text-sm font-semibold text-black">Event</th>
-                <th class="text-sm font-semibold text-black">Time</th>
-              </tr>
-            </thead>
+          const wrapper = document.createElement('div');
+          wrapper.className = 'overflow-x-auto';
+          wrapper.innerHTML = `
+            <table class="table table-fixed w-full">
+              <thead>
+                <tr>
+                  <th class="text-sm font-semibold text-black break-words">Event</th>
+                  <th class="text-sm font-semibold text-black break-words">Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${events.map(e => {
+                  const start = formatDateTime(e.start.dateTime || e.start.date);
+                  const end = formatDateTime(e.end.dateTime || e.end.date);
+                  return `
+                    <tr class="hover:bg-teal-50 cursor-pointer">
+                      <td class="text-sm text-black break-words">${e.summary || ''}</td>
+                      <td class="text-sm font-semibold text-black break-words">${start} - ${end}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
           `;
-          const tbody = document.createElement('tbody');
-
-          events.forEach(e => {
+          // attach click listeners
+          wrapper.querySelectorAll('tr.hover\\:bg-teal-50').forEach((row, i) => {
+            const e = events[i];
             const start = formatDateTime(e.start.dateTime || e.start.date);
-            const end   = formatDateTime(e.end  .dateTime || e.end  .date);
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-teal-50 cursor-pointer';
-            row.innerHTML = `
-              <td class="event-title text-sm text-black">${e.summary}</td>
-              <td class="text-sm font-semibold text-black">${start} - ${end}</td>
-            `;
+            const end = formatDateTime(e.end.dateTime || e.end.date);
             row.addEventListener('click', () => {
-              document.getElementById('modal-summary').textContent    = e.summary || 'No title';
-              document.getElementById('modal-time')  .textContent    = `${start} - ${end}`;
+              document.getElementById('modal-summary').textContent   = e.summary || 'No title';
+              document.getElementById('modal-time').textContent      = `${start} - ${end}`;
               document.getElementById('modal-location').textContent  = e.location || 'No location specified';
               document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
               document.getElementById('event-modal').checked = true;
             });
-            tbody.appendChild(row);
           });
-
-          table.appendChild(tbody);
-          body.appendChild(table);
+          body.appendChild(wrapper);
         }
       }
 
-      // All Events card
-      const allCard = document.createElement('div');
-      allCard.className = 'card bg-white dark:bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
-      container.appendChild(allCard);
+      // week card
+      const weekCard = document.createElement('div');
+      weekCard.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
+      container.appendChild(weekCard);
 
-      const allBody = document.createElement('div');
-      allBody.className = 'card-body p-6 all-events-body';
-      allCard.appendChild(allBody);
+      const weekBody = document.createElement('div');
+      weekBody.className = 'card-body p-6 all-events-body';
+      weekCard.appendChild(weekBody);
 
-      allBody.innerHTML = `
+      weekBody.innerHTML = `
         <h2 class="card-title text-xl font-bold mb-4 text-black">All Events This Week</h2>
         <div class="divider"></div>
       `;
 
-      const eventsThisWeek = await fetchEventsForThisWeek();
-
-      if (eventsThisWeek.length === 0) {
+      if (!weekEvents.length) {
         const p = document.createElement('p');
         p.className = 'text-gray-500 text-center py-4';
         p.textContent = 'No events this week';
-        allBody.appendChild(p);
+        weekBody.appendChild(p);
       } else {
-        const eventsMap = {};
-        eventsThisWeek.forEach(e => {
-          const title = e.summary;
+        const map = {};
+        weekEvents.forEach(e => {
+          const title = e.summary || '';
           const start = formatDateTime(e.start.dateTime || e.start.date);
-          if (!eventsMap[title]) eventsMap[title] = [];
-          eventsMap[title].push({ start, e });
+          if (!map[title]) map[title] = [];
+          map[title].push({ start, e });
         });
 
-        for (const [title, occurrences] of Object.entries(eventsMap)) {
+        Object.entries(map).forEach(([title, occ]) => {
           const li = document.createElement('li');
-          li.className = 'text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
+          li.className = 'text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded break-words';
           li.innerHTML = `<span class="font-bold">${title}</span>`;
           li.addEventListener('click', () => {
-            const modalContent = occurrences.map(({ start }) => `<div><strong>When:</strong> ${start}</div>`).join('');
-            document.getElementById('modal-summary').innerHTML    = title;
-            document.getElementById('modal-time').innerHTML       = modalContent;
-            document.getElementById('modal-location').textContent = occurrences[0].e.location || 'No location specified';
-            document.getElementById('modal-description').innerHTML= occurrences[0].e.description || '<p>No description provided</p>';
+            document.getElementById('modal-summary').innerHTML = `${title}`;
+            document.getElementById('modal-time').innerHTML = occ.map(o => `<div><strong>When:</strong> ${o.start}</div>`).join('');
+            document.getElementById('modal-location').textContent = occ[0].e.location || 'No location specified';
+            document.getElementById('modal-description').innerHTML = occ[0].e.description || '<p>No description provided</p>';
             document.getElementById('event-modal').checked = true;
           });
-          allBody.appendChild(li);
-        }
+          weekBody.appendChild(li);
+        });
       }
     }
 
     init();
-
-    // === Chart.js Initialization ===
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Mon','Tue','Wed','Thu','Fri'],
-        datasets: [{
-          label: 'Visitors',
-          data: [30,45,60,50,75],
-          backgroundColor: 'rgba(13,148,136,0.6)',
-          borderColor:     'rgba(13,148,136,1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true }
-        },
-        plugins: {
-          legend: {
-            labels: { color: '#000' }
-          }
-        }
-      }
-    });
   </script>
 </body>
 </html>
-
