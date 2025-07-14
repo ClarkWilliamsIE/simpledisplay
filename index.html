@@ -235,8 +235,12 @@
               return `<li class="mb-1">🕒 <strong>${date}</strong> from <strong>${start}</strong> to <strong>${end}</strong></li>`;
             }).join('');
 
+            const description = group[0].description || 'No description provided';
             document.getElementById('modal-time').textContent = '';
-            document.getElementById('modal-description').innerHTML = `<ul class="list-disc pl-4">${timeList}</ul>`;
+            document.getElementById('modal-description').innerHTML = `
+              <p class="mb-2 text-sm">${description}</p>
+              <ul class="list-disc pl-4">${timeList}</ul>
+            `;
             document.getElementById('event-modal').checked = true;
           });
 
