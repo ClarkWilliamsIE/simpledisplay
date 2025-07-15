@@ -193,7 +193,8 @@
       container.appendChild(allCard);
 
       const allBody = document.createElement('div');
-      allBody.className = 'card-body p-6';
+      allBody.className = 'card-body p-6 overflow-y-auto';
+      allBody.style.maxHeight = '400px'; // scrolling enabled for this one only
       allCard.appendChild(allBody);
 
       allBody.innerHTML = `
