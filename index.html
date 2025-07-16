@@ -104,28 +104,36 @@
         const isJOP = cal.id.includes('b0228e24');
         const dateMin = isJOP ? weekStartStr : todayStart;
         const dateMax = isJOP ? weekEndStr : todayEnd;
-        const eventsToday = await fetchEvents(cal.id, dateMin, dateMax);
-        const eventsWeek = await fetchEvents(cal.id, weekStartStr, weekEndStr);
-        allWeekEvents.push(...eventsWeek);
+        const events = await fetchEvents(cal.id, dateMin, dateMax);
+
+        if (!isJOP) {
+          const weekEvents = await fetchEvents(cal.id, weekStartStr, weekEndStr);
+          allWeekEvents.push(...weekEvents);
+        }
 
         const card = document.createElement('div');
+        const cardTitle = isJOP ? `${cal.name} (This Week)` : cal.name;
         card.className = 'border border-gray-300 p-4 rounded-lg shadow-md';
-        card.innerHTML = `<h3 class="card-title mb-3">${cal.name}</h3>`;
+        card.innerHTML = `<h3 class="card-title mb-3">${cardTitle}</h3>`;
 
-        if (eventsToday.length === 0) {
-          card.innerHTML += `<p class="text-gray-500">No events today</p>`;
+        if (events.length === 0) {
+          card.innerHTML += `<p class="text-gray-500">No events${isJOP ? ' this week' : ' today'}</p>`;
         } else {
           const list = document.createElement('ul');
           list.className = 'space-y-2';
-          for (const event of eventsToday) {
-            const start = formatTime(event.start.dateTime || event.start.date);
+          for (const event of events) {
+            const startDate = new Date(event.start.dateTime || event.start.date);
+            const start = formatTime(startDate);
             const end = formatTime(event.end.dateTime || event.end.date);
+            const dayName = isJOP ? startDate.toLocaleDateString([], { weekday: 'long' }) : '';
             const colorClass = event.colorId ? TAG_COLORS[parseInt(event.colorId) % TAG_COLORS.length] : randomTag();
             const li = document.createElement('li');
             li.innerHTML = `
               <div class="event-title flex justify-between items-center">
                 <span>${event.summary}</span>
-                <span class="rounded px-2 py-0.5 text-sm ${colorClass}">${start} – ${end}</span>
+                <span class="rounded px-2 py-0.5 text-sm ${colorClass}">
+                  ${isJOP ? `${dayName} – ` : ''}${start} – ${end}
+                </span>
               </div>`;
             list.appendChild(li);
           }
@@ -135,10 +143,9 @@
         roomContainer.appendChild(card);
       }
 
-      // Weekly Highlights (excluding JP calendar)
-      const filteredWeekEvents = allWeekEvents.filter(e => !e.organizer || !e.organizer.email.includes('b0228e24'));
+      // Weekly Highlights (excluding JOP)
       const grouped = {};
-      filteredWeekEvents.forEach(e => {
+      allWeekEvents.forEach(e => {
         const key = e.summary || 'Untitled Event';
         if (!grouped[key]) grouped[key] = 0;
         grouped[key]++;
