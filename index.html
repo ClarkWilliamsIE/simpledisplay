@@ -101,7 +101,10 @@
       const allWeekEvents = [];
 
       for (const cal of calendars) {
-        const eventsToday = await fetchEvents(cal.id, todayStart, todayEnd);
+        const isJOP = cal.id.includes('b0228e24');
+        const dateMin = isJOP ? weekStartStr : todayStart;
+        const dateMax = isJOP ? weekEndStr : todayEnd;
+        const eventsToday = await fetchEvents(cal.id, dateMin, dateMax);
         const eventsWeek = await fetchEvents(cal.id, weekStartStr, weekEndStr);
         allWeekEvents.push(...eventsWeek);
 
