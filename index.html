@@ -1,46 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Library "What’s On - Paraparaumu Library" Display</title>
-
-  <!-- Tailwind CSS CDN -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paraparaumu Library Schedule</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
-
   <style>
     html, body {
-      max-width: 100%;
       overflow-x: hidden;
-    }
-
-    body {
-      font-family: sans-serif;
       background-color: #319795;
       color: white;
+      max-width: 100vw;
     }
-
-    .card-body {
-      overflow-y: auto;
-      max-height: 400px;
-      padding: 1rem;
-    }
-
-    .card-title, .event-title {
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      white-space: normal;
-    }
-
     .non-responsive-container {
       width: 1440px;
       margin: 0 auto;
     }
+    .card-body {
+      max-height: 400px;
+      overflow-y: auto;
+    }
   </style>
 </head>
-<body class="overflow-x-hidden">
-
+<body>
   <div class="navbar bg-transparent text-white mb-6">
     <div class="flex-1 px-6">
       <span class="text-3xl font-extrabold">Paraparaumu Library Schedule</span>
@@ -65,7 +48,7 @@
     </div>
   </div>
 
-  <script type="text/babel" data-presets="env">
+  <script>
     const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
     const calendars = [
       { id: 'paraparaumumake@gmail.com', name: 'Flexi space' },
@@ -94,7 +77,7 @@
       const container = document.getElementById('rooms');
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg';
+        card.className = 'card bg-white text-black shadow-xl border-2 border-teal-300 rounded-lg';
         card.style.overflowX = 'hidden';
         container.appendChild(card);
 
@@ -106,7 +89,7 @@
 
         body.innerHTML = `
           <div class="mb-2">
-            <h2 class="card-title text-black mb-1">${cal.name}</h2>
+            <h2 class="card-title mb-1">${cal.name}</h2>
             <span class="badge badge-info">${events.length} ${events.length === 1 ? 'event' : 'events'}</span>
           </div>
           <div class="divider"></div>
@@ -124,12 +107,11 @@
 
           const table = document.createElement('table');
           table.className = 'table w-full text-left';
-
           table.innerHTML = `
             <thead>
               <tr>
-                <th class="text-sm font-semibold text-black">Event</th>
-                <th class="text-sm font-semibold text-black">Time</th>
+                <th class="text-sm font-semibold">Event</th>
+                <th class="text-sm font-semibold">Time</th>
               </tr>
             </thead>
           `;
@@ -141,8 +123,8 @@
             const row = document.createElement('tr');
             row.className = 'hover:bg-teal-50 cursor-pointer';
             row.innerHTML = `
-              <td class="event-title text-sm text-black">${e.summary}</td>
-              <td class="text-sm font-semibold text-black">${start} - ${end}</td>
+              <td class="text-sm">${e.summary}</td>
+              <td class="text-sm font-semibold">${start} - ${end}</td>
             `;
             row.addEventListener('click', () => {
               document.getElementById('modal-summary').textContent = e.summary || 'No title';
@@ -161,7 +143,7 @@
       }
     }
 
-    init();
+    window.onload = init;
   </script>
 </body>
 </html>
