@@ -52,6 +52,9 @@
 
     <div id="rooms" class="grid"></div>
 
+    <h2 style="margin-top: 3rem;">All Events This Week</h2>
+    <div id="weekly-events" class="grid"></div>
+
     <sl-dialog label="Event Details" id="event-modal">
       <strong id="modal-summary"></strong>
       <div class="modal-details">
@@ -79,19 +82,29 @@
 
     const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    async function fetchEventsForToday(id) {
-      const now = new Date();
-      const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-      const timeMax = new Date(now.setHours(23, 59, 59, 999)).toISOString();
+    async function fetchEvents(id, timeMin, timeMax) {
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
       const res = await fetch(url);
       return (await res.json()).items || [];
     }
 
+    function groupEventsByDay(events) {
+      const days = {};
+      events.forEach(e => {
+        const dateKey = new Date(e.start.dateTime || e.start.date).toDateString();
+        if (!days[dateKey]) days[dateKey] = [];
+        days[dateKey].push(e);
+      });
+      return days;
+    }
+
     async function init() {
       const container = document.getElementById('rooms');
       for (const cal of calendars) {
-        const events = await fetchEventsForToday(cal.id);
+        const now = new Date();
+        const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+        const timeMax = new Date(now.setHours(23, 59, 59, 999)).toISOString();
+        const events = await fetchEvents(cal.id, timeMin, timeMax);
 
         const card = document.createElement('sl-card');
         const header = `<h3>${cal.name}</h3><p>${events.length} ${events.length === 1 ? 'event' : 'events'} today</p>`;
@@ -107,6 +120,32 @@
         card.innerHTML = `${header}<hr/>${eventRows}`;
         container.appendChild(card);
       }
+
+      const weeklyContainer = document.getElementById('weekly-events');
+      const allEvents = [];
+      const start = new Date();
+      start.setDate(start.getDate() - start.getDay());
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+
+      for (const cal of calendars) {
+        const events = await fetchEvents(cal.id, start.toISOString(), end.toISOString());
+        allEvents.push(...events);
+      }
+
+      const grouped = groupEventsByDay(allEvents);
+      Object.entries(grouped).forEach(([day, events]) => {
+        const card = document.createElement('sl-card');
+        const content = `<h3>${day}</h3><hr/><table class="event-table">${events.map(e => {
+          const start = formatTime(e.start.dateTime || e.start.date);
+          const end = formatTime(e.end.dateTime || e.end.date);
+          return `<tr onclick="showEventModal(${encodeURIComponent(JSON.stringify(e))})" style="cursor:pointer"><td>${e.summary}</td><td>${start} - ${end}</td></tr>`;
+        }).join('')}</table>`;
+        card.innerHTML = content;
+        weeklyContainer.appendChild(card);
+      });
     }
 
     window.showEventModal = (encoded) => {
