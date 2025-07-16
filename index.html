@@ -1,71 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Paraparaumu Library Schedule</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/themes/light.css" />
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.0.0-beta.83/dist/shoelace.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Library Events Display</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #00b4d8, #0077b6);
-      color: #fff;
+      font-family: sans-serif;
+      overflow: hidden;
     }
-    .container {
-      padding: 2rem;
-      max-width: 1200px;
-      margin: auto;
+    .card-title, .event-time {
+      font-size: 1.25rem;
+      font-weight: bold;
     }
-    .title-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-    sl-card::part(base) {
-      background: #ffffff;
-      color: #000;
-      height: 100%;
-    }
-    .event-table td {
-      padding: 0.4rem 0;
-      border-bottom: 1px solid #ddd;
-    }
-    sl-dialog::part(panel) {
-      max-width: 600px;
+    .event-title {
+      font-size: 1.125rem;
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="title-bar">
-      <h1>Paraparaumu Library Schedule</h1>
-      <div id="current-date"></div>
-    </div>
+<body class="bg-white text-black p-8 space-y-8">
 
-    <div id="rooms" class="grid"></div>
-
-    <h2 style="margin-top: 3rem;">This Week's Events</h2>
-    <div id="weekly-events" class="grid"></div>
-
-    <sl-dialog label="Event Details" id="event-modal">
-      <strong id="modal-summary"></strong>
-      <div class="modal-details">
-        <p><strong>Time:</strong> <span id="modal-time"></span></p>
-        <p><strong>Location:</strong> <span id="modal-location"></span></p>
-        <div id="modal-description"></div>
-      </div>
-      <sl-button slot="footer" type="primary" onclick="document.getElementById('event-modal').hide()">Close</sl-button>
-    </sl-dialog>
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <h1 class="text-4xl font-bold">Paraparaumu Library – Today's Events</h1>
+    <span id="current-date" class="text-2xl font-medium"></span>
   </div>
 
+  <!-- Event Grid -->
+  <div id="room-events" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+
+  <!-- Weekly Highlights -->
+  <div class="mt-12">
+    <h2 class="text-3xl font-bold mb-4">Upcoming This Week</h2>
+    <ul id="weekly-highlights" class="space-y-2 pl-4 list-disc text-xl"></ul>
+  </div>
+
+  <!-- Script -->
   <script>
     const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
     const calendars = [
@@ -77,109 +48,92 @@
       { id: '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com', name: 'Upstairs lounge' },
     ];
 
-    document.getElementById('current-date').textContent =
-      new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString([], {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
 
-    const formatTime = ds => new Date(ds).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    function formatTime(dateStr) {
+      return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
 
-    async function fetchEvents(id, timeMin, timeMax) {
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
+    async function fetchEvents(calId, timeMin, timeMax) {
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`
+                + `?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
       const res = await fetch(url);
       return (await res.json()).items || [];
     }
 
-    async function init() {
-      const container = document.getElementById('rooms');
-      for (const cal of calendars) {
-        const now = new Date();
-        const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
-        const timeMax = new Date(now.setHours(23, 59, 59, 999)).toISOString();
-        const events = await fetchEvents(cal.id, timeMin, timeMax);
+    async function loadEvents() {
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+      const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString();
 
-        const card = document.createElement('sl-card');
-        const header = `<h3>${cal.name}</h3><p>${events.length} ${events.length === 1 ? 'event' : 'events'} today</p>`;
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      const weekStartStr = weekStart.toISOString();
+      const weekEndStr = weekEnd.toISOString();
 
-        const eventRows = events.length === 0
-          ? '<p style="color:gray">No events today</p>'
-          : `<table class="event-table">${events.map(e => {
-              const start = formatTime(e.start.dateTime || e.start.date);
-              const end = formatTime(e.end.dateTime || e.end.date);
-              return `<tr onclick="showEventModal(${encodeURIComponent(JSON.stringify(e))})" style="cursor:pointer"><td>${e.summary}</td><td>${start} - ${end}</td></tr>`;
-            }).join('')}</table>`;
+      const roomContainer = document.getElementById('room-events');
+      const highlightsContainer = document.getElementById('weekly-highlights');
+      roomContainer.innerHTML = '';
+      highlightsContainer.innerHTML = '';
 
-        card.innerHTML = `${header}<hr/>${eventRows}`;
-        container.appendChild(card);
-      }
-
-      const weeklyContainer = document.getElementById('weekly-events');
-      const allEvents = [];
-      const start = new Date();
-      start.setDate(start.getDate() - start.getDay());
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
+      const weeklyEvents = [];
 
       for (const cal of calendars) {
-        const events = await fetchEvents(cal.id, start.toISOString(), end.toISOString());
-        allEvents.push(...events);
+        const events = await fetchEvents(cal.id, todayStart, todayEnd);
+        const weekEvents = await fetchEvents(cal.id, weekStartStr, weekEndStr);
+        weeklyEvents.push(...weekEvents);
+
+        const card = document.createElement('div');
+        card.className = 'border border-gray-300 p-4 rounded-lg shadow-md';
+        card.innerHTML = `<h3 class="card-title mb-3">${cal.name}</h3>`;
+
+        if (events.length === 0) {
+          card.innerHTML += `<p class="text-gray-500">No events today</p>`;
+        } else {
+          const list = document.createElement('ul');
+          list.className = 'space-y-2';
+          for (const event of events) {
+            const start = formatTime(event.start.dateTime || event.start.date);
+            const end = formatTime(event.end.dateTime || event.end.date);
+            const li = document.createElement('li');
+            li.innerHTML = `<div class="event-title">${event.summary}</div>
+                            <div class="event-time text-gray-600">${start} – ${end}</div>`;
+            list.appendChild(li);
+          }
+          card.appendChild(list);
+        }
+
+        roomContainer.appendChild(card);
       }
 
-      const groupedEvents = {};
-      allEvents.forEach(e => {
-        const key = e.summary || 'Untitled';
-        if (!groupedEvents[key]) groupedEvents[key] = [];
-        groupedEvents[key].push(e);
-      });
+      const upcoming = {};
+      for (const e of weeklyEvents) {
+        const name = e.summary || 'Untitled Event';
+        if (!upcoming[name]) upcoming[name] = 0;
+        upcoming[name]++;
+      }
 
-      const card = document.createElement('sl-card');
-      const content = `<ul style="list-style: none; padding-left: 0;">
-        ${Object.entries(groupedEvents).sort().map(([summary, group]) => {
-          return `<li style="padding: 0.4rem 0; cursor: pointer; border-bottom: 1px solid #ddd;" onclick='showGroupedEventModal(${encodeURIComponent(JSON.stringify(group))})'>
-            ${summary} <span style="color: gray;">(${group.length} time${group.length > 1 ? 's' : ''})</span>
-          </li>`;
-        }).join('')}
-      </ul>`;
-      card.innerHTML = content;
-      weeklyContainer.appendChild(card);
+      const sortedNames = Object.keys(upcoming).sort();
+      for (const name of sortedNames) {
+        const li = document.createElement('li');
+        li.textContent = `${name} (${upcoming[name]} time${upcoming[name] > 1 ? 's' : ''})`;
+        highlightsContainer.appendChild(li);
+      }
     }
 
-    window.showGroupedEventModal = (encoded) => {
-      const group = JSON.parse(decodeURIComponent(encoded));
-      const first = group[0];
-      document.getElementById('modal-summary').textContent = first.summary || 'No title';
-      document.getElementById('modal-location').textContent = first.location || 'No location specified';
-
-      const timeList = group.map(e => {
-        const start = formatTime(e.start.dateTime || e.start.date);
-        const end = formatTime(e.end.dateTime || e.end.date);
-        const date = new Date(e.start.dateTime || e.start.date).toLocaleDateString();
-        return `<li>${date}: ${start} - ${end}</li>`;
-      }).join('');
-
-      document.getElementById('modal-time').textContent = '';
-      document.getElementById('modal-description').innerHTML = `
-        <p>${first.description || 'No description provided'}</p>
-        <ul style="margin-top: 1em;">${timeList}</ul>
-      `;
-      document.getElementById('event-modal').show();
-    };
-
-    window.showEventModal = (encoded) => {
-      const e = JSON.parse(decodeURIComponent(encoded));
-      const start = formatTime(e.start.dateTime || e.start.date);
-      const end = formatTime(e.end.dateTime || e.end.date);
-
-      document.getElementById('modal-summary').textContent = e.summary || 'No title';
-      document.getElementById('modal-time').textContent = `${start} - ${end}`;
-      document.getElementById('modal-location').textContent = e.location || 'No location specified';
-      document.getElementById('modal-description').innerHTML = e.description || '<p>No description provided</p>';
-      document.getElementById('event-modal').show();
-    };
-
-    init();
+    loadEvents();
+    setInterval(loadEvents, 15 * 60 * 1000); // Refresh every 15 minutes
   </script>
 </body>
 </html>
+
 
 
