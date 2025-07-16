@@ -110,7 +110,7 @@
         const events = await fetchEvents(cal.id, dateMin, dateMax);
         const roomColor = roomColors[cal.id] || 'bg-gray-100';
 
-        // Prepare 7-day view
+        // Prepare 7-day view (skip JP)
         if (!isJOP) {
           const weekEvents = await fetchEvents(cal.id, weekStartStr, weekEndStr);
           for (const e of weekEvents) {
@@ -137,11 +137,20 @@
             const end = formatTime(event.end.dateTime || event.end.date);
             const dayName = isJOP ? startDate.toLocaleDateString([], { weekday: 'long' }) : '';
             const li = document.createElement('li');
-            li.innerHTML = `
-              <div class="event-title flex justify-between items-center">
-                <span>${event.summary}</span>
-                <span class="rounded px-2 py-0.5 text-sm bg-white">${isJOP ? `${dayName} – ` : ''}${start} – ${end}</span>
-              </div>`;
+
+            if (isJOP) {
+              li.innerHTML = `
+                <div class="event-title text-sm">
+                  ${dayName} – ${start} – ${end}
+                </div>`;
+            } else {
+              li.innerHTML = `
+                <div class="event-title flex justify-between items-center">
+                  <span>${event.summary}</span>
+                  <span class="rounded px-2 py-0.5 text-sm bg-white">${start} – ${end}</span>
+                </div>`;
+            }
+
             list.appendChild(li);
           }
           card.appendChild(list);
@@ -190,3 +199,4 @@
   </script>
 </body>
 </html>
+
