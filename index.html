@@ -1,34 +1,45 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Library "What’s On - Paraparaumu Library" Display</title>
 
-  <!-- Tailwind + DaisyUI via CDN -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.5/dist/full.css" rel="stylesheet"/>
-
-  <!-- Polyfills -->
-  <script src="https://cdn.polyfill.io/v3/polyfill.min.js?features=default,fetch,Promise,Array.prototype.includes"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     html, body {
       max-width: 100%;
       overflow-x: hidden;
     }
-    .card-body {
-      max-height: 400px;
+
+    body {
+      font-family: sans-serif;
+      background-color: #319795;
+      color: white;
     }
+
+    .card-body {
+      overflow-y: auto;
+      max-height: 400px;
+      padding: 1rem;
+    }
+
     .card-title, .event-title {
       word-wrap: break-word;
       overflow-wrap: break-word;
       white-space: normal;
     }
+
+    .non-responsive-container {
+      width: 1440px;
+      margin: 0 auto;
+    }
   </style>
 </head>
-<body class="bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600 text-white min-h-screen flex flex-col overflow-x-hidden">
+<body class="overflow-x-hidden">
 
   <div class="navbar bg-transparent text-white mb-6">
     <div class="flex-1 px-6">
@@ -39,8 +50,8 @@
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-6 flex-1">
-    <div id="rooms" class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+  <div class="non-responsive-container">
+    <div id="rooms" class="grid gap-6 grid-cols-4"></div>
   </div>
 
   <input type="checkbox" id="event-modal" class="modal-toggle"/>
@@ -74,53 +85,23 @@
       const now = new Date();
       const timeMin = new Date(now.setHours(0, 0, 0, 0)).toISOString();
       const timeMax = new Date(now.setHours(23, 59, 59, 999)).toISOString();
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events`
-                + `?key=${API_KEY}`
-                + `&timeMin=${timeMin}&timeMax=${timeMax}`
-                + `&singleEvents=true&orderBy=startTime`;
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
       const res = await fetch(url);
       return (await res.json()).items || [];
     }
 
-    async function fetchEventsForThisWeek() {
-      const allEvents = [];
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-      const timeMin = startOfWeek.toISOString();
-      const timeMax = endOfWeek.toISOString();
-
-      for (const cal of calendars) {
-        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
-                  + `?key=${API_KEY}`
-                  + `&timeMin=${timeMin}&timeMax=${timeMax}`
-                  + `&singleEvents=true&orderBy=startTime`;
-        const res = await fetch(url);
-        const events = (await res.json()).items || [];
-        allEvents.push(...events);
-      }
-
-      return allEvents;
-    }
-
     async function init() {
       const container = document.getElementById('rooms');
-      let allEvents = [];
-
       for (const cal of calendars) {
         const card = document.createElement('div');
-        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out overflow-hidden';
+        card.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg';
+        card.style.overflowX = 'hidden';
         container.appendChild(card);
 
         const events = await fetchEventsForToday(cal.id);
-        allEvents = allEvents.concat(events);
 
         const body = document.createElement('div');
-        body.className = 'card-body p-6';
+        body.className = 'card-body';
         card.appendChild(body);
 
         body.innerHTML = `
@@ -137,11 +118,13 @@
           p.textContent = 'No events today';
           body.appendChild(p);
         } else {
-          const scrollWrap = document.createElement('div');
-          scrollWrap.className = 'overflow-y-auto max-h-60 w-full';
+          const tableWrapper = document.createElement('div');
+          tableWrapper.className = 'overflow-y-auto';
+          tableWrapper.style.maxHeight = '200px';
 
           const table = document.createElement('table');
           table.className = 'table w-full text-left';
+
           table.innerHTML = `
             <thead>
               <tr>
@@ -150,8 +133,8 @@
               </tr>
             </thead>
           `;
-          const tbody = document.createElement('tbody');
 
+          const tbody = document.createElement('tbody');
           events.forEach(e => {
             const start = formatTime(e.start.dateTime || e.start.date);
             const end = formatTime(e.end.dateTime || e.end.date);
@@ -172,72 +155,9 @@
           });
 
           table.appendChild(tbody);
-          scrollWrap.appendChild(table);
-          body.appendChild(scrollWrap);
+          tableWrapper.appendChild(table);
+          body.appendChild(tableWrapper);
         }
-      }
-
-      const allCard = document.createElement('div');
-      allCard.className = 'card bg-white shadow-xl border-2 border-teal-300 rounded-lg hover:shadow-2xl transition-all duration-300 ease-in-out';
-      container.appendChild(allCard);
-
-      const allBody = document.createElement('div');
-      allBody.className = 'card-body p-6 overflow-y-auto';
-      allBody.style.maxHeight = '400px';
-      allCard.appendChild(allBody);
-
-      allBody.innerHTML = `
-        <h2 class="card-title text-xl font-bold mb-4 text-black">All Events This Week</h2>
-        <div class="divider"></div>
-      `;
-
-      const eventsThisWeek = await fetchEventsForThisWeek();
-      const grouped = {};
-      eventsThisWeek.forEach(e => {
-        const key = e.summary || 'Untitled Event';
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(e);
-      });
-
-      if (Object.keys(grouped).length === 0) {
-        const p = document.createElement('p');
-        p.className = 'text-gray-500 text-center py-4';
-        p.textContent = 'No events this week';
-        allBody.appendChild(p);
-      } else {
-        const ul = document.createElement('ul');
-        ul.className = 'space-y-2';
-
-        for (const [summary, group] of Object.entries(grouped)) {
-          const li = document.createElement('li');
-          li.className = 'flex justify-between items-center text-sm text-black cursor-pointer hover:bg-teal-50 p-2 rounded';
-          li.innerHTML = `
-            <span class="font-semibold">${summary}</span>
-            <span class="text-xs text-gray-600">${group.length} time${group.length > 1 ? 's' : ''}</span>
-          `;
-
-          li.addEventListener('click', () => {
-            document.getElementById('modal-summary').textContent = summary;
-            document.getElementById('modal-location').textContent = group[0].location || 'No location specified';
-            const timeList = group.map(e => {
-              const start = formatTime(e.start.dateTime || e.start.date);
-              const end = formatTime(e.end.dateTime || e.end.date);
-              const date = new Date(e.start.dateTime || e.start.date).toLocaleDateString();
-              return `<li class="mb-1">🕒 <strong>${date}</strong> from <strong>${start}</strong> to <strong>${end}</strong></li>`;
-            }).join('');
-            const description = group[0].description || 'No description provided';
-            document.getElementById('modal-time').textContent = '';
-            document.getElementById('modal-description').innerHTML = `
-              <p class="mb-2 text-sm">${description}</p>
-              <ul class="list-disc pl-4">${timeList}</ul>
-            `;
-            document.getElementById('event-modal').checked = true;
-          });
-
-          ul.appendChild(li);
-        }
-
-        allBody.appendChild(ul);
       }
     }
 
@@ -245,5 +165,6 @@
   </script>
 </body>
 </html>
+
 
 
