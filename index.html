@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Library Events Display</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -10,16 +10,21 @@
       font-family: sans-serif;
       overflow: hidden;
     }
-    .card-title, .event-time {
-      font-size: 1.25rem;
+    .card-title {
+      font-size: 1.5rem;
       font-weight: bold;
     }
     .event-title {
-      font-size: 1.125rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .event-time {
+      font-size: 1rem;
+      color: #4b5563;
     }
   </style>
 </head>
-<body class="bg-white text-black p-8 space-y-8">
+<body class="bg-white text-black p-8 space-y-12">
 
   <!-- Header -->
   <div class="flex justify-between items-center">
@@ -30,10 +35,20 @@
   <!-- Event Grid -->
   <div id="room-events" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
 
-  <!-- Weekly Highlights -->
-  <div class="mt-12">
-    <h2 class="text-3xl font-bold mb-4">Upcoming This Week</h2>
-    <ul id="weekly-highlights" class="space-y-2 pl-4 list-disc text-xl"></ul>
+  <!-- Bottom Highlights -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 justify-center text-center pt-6 max-w-screen-xl mx-auto">
+    <div class="border border-gray-300 p-4 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-3">Upcoming This Week</h2>
+      <ul id="weekly-highlights" class="space-y-2 list-disc list-inside text-left"></ul>
+    </div>
+    <div class="border border-gray-300 p-4 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-3">Justice of the Peace</h2>
+      <ul id="jop-events" class="space-y-2 list-none text-left"></ul>
+    </div>
+    <div class="border border-gray-300 p-4 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-3">Coming Soon</h2>
+      <p class="text-lg text-gray-600">More highlights coming!</p>
+    </div>
   </div>
 
   <!-- Script -->
@@ -48,6 +63,12 @@
       { id: '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com', name: 'Upstairs lounge' },
     ];
 
+    const jopCalendarId = 'b0228e246833cd5cafecfbbdda140afec688229319ee1a9643d5043abc0f2d46@group.calendar.google.com';
+
+    const TAG_COLORS = [
+      'bg-pink-200', 'bg-yellow-200', 'bg-green-200', 'bg-blue-200', 'bg-purple-200', 'bg-orange-200'
+    ];
+
     document.getElementById('current-date').textContent = new Date().toLocaleDateString([], {
       weekday: 'long',
       month: 'long',
@@ -58,6 +79,10 @@
       return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    function randomTag() {
+      return TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)];
+    }
+
     async function fetchEvents(calId, timeMin, timeMax) {
       const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`
                 + `?key=${API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
@@ -65,7 +90,7 @@
       return (await res.json()).items || [];
     }
 
-    async function loadEvents() {
+    async function loadDashboard() {
       const now = new Date();
       const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
       const todayEnd = new Date(now.setHours(23, 59, 59, 999)).toISOString();
@@ -81,31 +106,37 @@
 
       const roomContainer = document.getElementById('room-events');
       const highlightsContainer = document.getElementById('weekly-highlights');
+      const jopContainer = document.getElementById('jop-events');
       roomContainer.innerHTML = '';
       highlightsContainer.innerHTML = '';
+      jopContainer.innerHTML = '';
 
-      const weeklyEvents = [];
+      const allWeekEvents = [];
 
       for (const cal of calendars) {
-        const events = await fetchEvents(cal.id, todayStart, todayEnd);
-        const weekEvents = await fetchEvents(cal.id, weekStartStr, weekEndStr);
-        weeklyEvents.push(...weekEvents);
+        const eventsToday = await fetchEvents(cal.id, todayStart, todayEnd);
+        const eventsWeek = await fetchEvents(cal.id, weekStartStr, weekEndStr);
+        allWeekEvents.push(...eventsWeek);
 
         const card = document.createElement('div');
         card.className = 'border border-gray-300 p-4 rounded-lg shadow-md';
         card.innerHTML = `<h3 class="card-title mb-3">${cal.name}</h3>`;
 
-        if (events.length === 0) {
+        if (eventsToday.length === 0) {
           card.innerHTML += `<p class="text-gray-500">No events today</p>`;
         } else {
           const list = document.createElement('ul');
           list.className = 'space-y-2';
-          for (const event of events) {
+          for (const event of eventsToday) {
             const start = formatTime(event.start.dateTime || event.start.date);
             const end = formatTime(event.end.dateTime || event.end.date);
+            const colorClass = event.colorId ? TAG_COLORS[parseInt(event.colorId) % TAG_COLORS.length] : randomTag();
             const li = document.createElement('li');
-            li.innerHTML = `<div class="event-title">${event.summary}</div>
-                            <div class="event-time text-gray-600">${start} – ${end}</div>`;
+            li.innerHTML = `
+              <div class="event-title flex justify-between items-center">
+                <span>${event.summary}</span>
+                <span class="rounded px-2 py-0.5 text-sm ${colorClass}">${start} – ${end}</span>
+              </div>`;
             list.appendChild(li);
           }
           card.appendChild(list);
@@ -114,23 +145,40 @@
         roomContainer.appendChild(card);
       }
 
-      const upcoming = {};
-      for (const e of weeklyEvents) {
-        const name = e.summary || 'Untitled Event';
-        if (!upcoming[name]) upcoming[name] = 0;
-        upcoming[name]++;
+      // Highlights grouped
+      const grouped = {};
+      allWeekEvents.forEach(e => {
+        const key = e.summary || 'Untitled Event';
+        if (!grouped[key]) grouped[key] = 0;
+        grouped[key]++;
+      });
+      const sorted = Object.keys(grouped).sort();
+      for (const key of sorted) {
+        const li = document.createElement('li');
+        li.textContent = `${key} (${grouped[key]} time${grouped[key] > 1 ? 's' : ''})`;
+        highlightsContainer.appendChild(li);
       }
 
-      const sortedNames = Object.keys(upcoming).sort();
-      for (const name of sortedNames) {
+      // Justice of the Peace
+      const jopEvents = await fetchEvents(jopCalendarId, weekStartStr, weekEndStr);
+      if (jopEvents.length === 0) {
         const li = document.createElement('li');
-        li.textContent = `${name} (${upcoming[name]} time${upcoming[name] > 1 ? 's' : ''})`;
-        highlightsContainer.appendChild(li);
+        li.textContent = 'No JOP sessions this week';
+        jopContainer.appendChild(li);
+      } else {
+        jopEvents.forEach(e => {
+          const day = new Date(e.start.dateTime || e.start.date).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+          const start = formatTime(e.start.dateTime || e.start.date);
+          const end = formatTime(e.end.dateTime || e.end.date);
+          const li = document.createElement('li');
+          li.textContent = `${day} ${start} – ${end}`;
+          jopContainer.appendChild(li);
+        });
       }
     }
 
-    loadEvents();
-    setInterval(loadEvents, 15 * 60 * 1000); // Refresh every 15 minutes
+    loadDashboard();
+    setInterval(loadDashboard, 15 * 60 * 1000); // Refresh every 15 min
   </script>
 </body>
 </html>
