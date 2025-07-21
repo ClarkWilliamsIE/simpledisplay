@@ -21,23 +21,23 @@
     }
     .event-time {
       font-size: 1rem;
-      color: #4b5563;
+      color: #9ca3af;
     }
   </style>
 </head>
-<body class="bg-gradient-to-b from-blue-50 to-white text-gray-800 p-8 space-y-12 min-h-screen">
+<body class="bg-gray-900 text-white p-8 space-y-12 min-h-screen">
   <!-- Header -->
-  <div class="flex justify-between items-center border-b border-gray-300 pb-4">
-    <h1 class="text-5xl font-extrabold text-blue-900 drop-shadow-sm">Paraparaumu Library</h1>
-    <span id="current-date" class="text-2xl text-gray-600"></span>
+  <div class="flex justify-between items-center border-b border-gray-700 pb-4">
+    <h1 class="text-5xl font-extrabold text-yellow-400 drop-shadow">Paraparaumu Library</h1>
+    <span id="current-date" class="text-2xl text-gray-300"></span>
   </div>
 
   <!-- Room Events -->
   <div id="room-events" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
 
   <!-- Upcoming Week Grid -->
-  <div class="mt-8 border border-gray-200 bg-white p-6 rounded-2xl shadow-xl w-full">
-    <h2 class="text-3xl font-bold mb-6 text-center text-blue-800">Events in the Next 7 Days</h2>
+  <div class="mt-8 border border-gray-700 bg-gray-800 p-6 rounded-2xl shadow-xl w-full">
+    <h2 class="text-3xl font-bold mb-6 text-center text-yellow-300">Events in the Next 7 Days</h2>
     <div id="weekly-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 text-base"></div>
   </div>
 
@@ -46,13 +46,13 @@
     const API_KEY = 'AIzaSyD2qBhlb_rQHGh3kJ_ENFrxsRoFFmfrX8A';
 
     const roomColors = {
-      'paraparaumumake@gmail.com': 'bg-blue-100',
-      '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com': 'bg-green-100',
-      'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com': 'bg-orange-100',
-      '9d751487e4a33f27971ca1b54bd27d82b56d39278aabd6bcb562c431979396a2@group.calendar.google.com': 'bg-yellow-100',
-      'bf9774fd9a1f9cf44aff3d1ee97ef2a5e30789ef17f99ba846c3a780850f7e7a@group.calendar.google.com': 'bg-pink-100',
-      '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com': 'bg-purple-100',
-      'b0228e246833cd5cafecfbbdda140afec688229319ee1a9643d5043abc0f2d46@group.calendar.google.com': 'bg-red-100',
+      'paraparaumumake@gmail.com': 'bg-blue-700',
+      '99cb749e0421c837039bebfa2773ec2b696f4cbb5c8e1db0a27f071c38e871be@group.calendar.google.com': 'bg-green-600',
+      'b952fc7ae8ea23d6f8648ee78ec4bbe830ecd5aa55266eb5a715bbcd3129718a@group.calendar.google.com': 'bg-orange-500',
+      '9d751487e4a33f27971ca1b54bd27d82b56d39278aabd6bcb562c431979396a2@group.calendar.google.com': 'bg-yellow-500',
+      'bf9774fd9a1f9cf44aff3d1ee97ef2a5e30789ef17f99ba846c3a780850f7e7a@group.calendar.google.com': 'bg-pink-500',
+      '583fc72e7af8b504711782c092a5e3c8ea73eda4d2e4d87128c0e78d471be68c@group.calendar.google.com': 'bg-purple-600',
+      'b0228e246833cd5cafecfbbdda140afec688229319ee1a9643d5043abc0f2d46@group.calendar.google.com': 'bg-red-600',
     };
 
     const calendars = [
@@ -106,7 +106,7 @@
         const dateMin = isJOP ? weekStartStr : todayStart;
         const dateMax = isJOP ? weekEndStr : todayEnd;
         const events = await fetchEvents(cal.id, dateMin, dateMax);
-        const roomColor = roomColors[cal.id] || 'bg-gray-100';
+        const roomColor = roomColors[cal.id] || 'bg-gray-700';
 
         if (!isJOP) {
           const weekEvents = await fetchEvents(cal.id, weekStartStr, weekEndStr);
@@ -119,11 +119,11 @@
 
         const card = document.createElement('div');
         const cardTitle = isJOP ? `${cal.name} (This Week)` : cal.name;
-        card.className = `${roomColor} border border-gray-300 p-5 rounded-2xl shadow-md`;
-        card.innerHTML = `<h3 class="card-title mb-3 text-blue-800">${cardTitle}</h3>`;
+        card.className = `${roomColor} border border-gray-700 p-5 rounded-2xl shadow-md`;
+        card.innerHTML = `<h3 class="card-title mb-3 text-yellow-200">${cardTitle}</h3>`;
 
         if (events.length === 0) {
-          card.innerHTML += `<p class="text-gray-600">No events${isJOP ? ' this week' : ' today'}</p>`;
+          card.innerHTML += `<p class="text-gray-400">No events${isJOP ? ' this week' : ' today'}</p>`;
         } else {
           const list = document.createElement('ul');
           list.className = 'space-y-2';
@@ -135,12 +135,12 @@
             const li = document.createElement('li');
 
             if (isJOP) {
-              li.innerHTML = `<div class="event-title text-sm text-gray-700">${dayName} – ${start} – ${end}</div>`;
+              li.innerHTML = `<div class="event-title text-sm text-gray-300">${dayName} – ${start} – ${end}</div>`;
             } else {
               li.innerHTML = `
                 <div class="event-title flex justify-between items-center">
                   <span>${event.summary}</span>
-                  <span class="rounded px-2 py-0.5 text-sm bg-white border border-gray-300">${start} – ${end}</span>
+                  <span class="rounded px-2 py-0.5 text-sm bg-gray-800 border border-gray-500">${start} – ${end}</span>
                 </div>`;
             }
             list.appendChild(li);
@@ -156,19 +156,19 @@
         const label = dayDate.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
 
         const col = document.createElement('div');
-        col.className = 'bg-blue-50 rounded-xl p-3 h-full shadow-sm';
-        col.innerHTML = `<h4 class="text-lg font-semibold text-center mb-2 text-blue-700">${label}</h4>`;
+        col.className = 'bg-gray-800 rounded-xl p-3 h-full shadow-sm';
+        col.innerHTML = `<h4 class="text-lg font-semibold text-center mb-2 text-yellow-200">${label}</h4>`;
 
         const dayEvents = eventsByDay[i];
         if (dayEvents.length === 0) {
-          col.innerHTML += `<p class="text-sm text-center text-gray-400">No events</p>`;
+          col.innerHTML += `<p class="text-sm text-center text-gray-500">No events</p>`;
         } else {
           const list = document.createElement('ul');
           list.className = 'space-y-1';
           for (const e of dayEvents) {
             const start = formatTime(e.start.dateTime || e.start.date);
             const end = formatTime(e.end.dateTime || e.end.date);
-            const colorClass = roomColors[e.calId] || 'bg-gray-300';
+            const colorClass = roomColors[e.calId] || 'bg-gray-600';
             const li = document.createElement('li');
             li.innerHTML = `
               <div class="flex justify-between items-center text-sm">
@@ -188,5 +188,3 @@
   </script>
 </body>
 </html>
-
-
