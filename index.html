@@ -110,8 +110,12 @@
       }
     }
 
-    loadFeaturedCard();
-    setInterval(loadFeaturedCard, 60 * 1000);
+    async function loadDashboard() {
+      await loadFeaturedCard();
+    }
+
+    loadDashboard();
+    setInterval(loadDashboard, 60 * 1000);
   </script>
 </body>
 </html>
