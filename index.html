@@ -21,7 +21,13 @@
     .status-label { font-size: 1rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; }
     .status-event { font-size: 1.4rem; font-weight: 600; line-height: 1.2; }
     .status-time { font-size: 1.1rem; color: #d1d5db; }
+    
+    /* Updated "Open to Public" style */
     .status-available { color: #10b981; font-size: 1.5rem; font-weight: 700; }
+    
+    /* New style for JP when empty */
+    .status-closed { color: #9ca3af; font-size: 1.4rem; font-weight: 600; }
+
     .status-now { color: #f59e0b; }
     
     .highlight-card {
@@ -149,14 +155,11 @@
       const roomContainer = document.getElementById('room-events');
       const weeklyGrid = document.getElementById('weekly-grid');
       
-      // Simple loading state if empty
       if(roomContainer.children.length === 0) {
           roomContainer.innerHTML = '<p id="loading" class="text-2xl text-gray-400 animate-pulse">Loading calendar data...</p>';
       }
 
       const eventsByDay = Array.from({ length: 7 }, () => []);
-
-      // Temporary storage to avoid flickering during rebuild
       const newRoomCards = document.createDocumentFragment();
       
       for (const cal of calendars) {
@@ -181,12 +184,12 @@
 
         let cardContent = '';
         const nowTime = now.getTime();
-        
-        // Logic to find current vs next
+        const isJP = cal.name.includes('Justice of Peace'); // JP Check
+
         const currentEvent = todayEvents.find(e => {
           const start = new Date(e.start.dateTime || e.start.date).getTime();
           const end = new Date(e.end.dateTime || e.end.date).getTime();
-          if (!e.start.dateTime) { // All day logic
+          if (!e.start.dateTime) { 
              const adEnd = new Date(e.end.date).setDate(new Date(e.end.date).getDate() - 1);
              return new Date(e.start.date).setHours(0,0,0,0) <= nowTime && new Date(adEnd).setHours(23,59,59) > nowTime;
           }
@@ -195,6 +198,7 @@
         const nextEvent = todayEvents.find(e => new Date(e.start.dateTime || e.start.date).getTime() > nowTime);
 
         if (currentEvent) {
+          // --- BUSY ---
           const endTime = currentEvent.end.dateTime ? `Until ${formatTime(currentEvent.end.dateTime)}` : 'All Day';
           cardContent = `
             <div class="mb-2">
@@ -208,28 +212,49 @@
                 <p class="status-event truncate text-lg">${nextEvent.summary}</p>
                 <p class="status-time text-base">At ${formatTime(nextEvent.start.dateTime || nextEvent.start.date)}</p>
             </div>` : ''}`;
+        
         } else if (nextEvent) {
-          cardContent = `
-            <div class="mb-2"><p class="status-available">Available</p></div>
+          // --- EMPTY NOW, BUT EVENT LATER ---
+          if (isJP) {
+            // JP Special Logic: Don't show "Open to public"
+            cardContent = `
+            <div class="mb-2"><p class="status-closed">Not in session</p></div>
+            <div class="mt-2 border-t border-gray-700 pt-2">
+                <span class="status-label">Next Session</span>
+                <p class="status-event truncate">${nextEvent.summary}</p>
+                <p class="status-time">At ${formatTime(nextEvent.start.dateTime || nextEvent.start.date)}</p>
+            </div>`;
+          } else {
+            // Normal Room
+            cardContent = `
+            <div class="mb-2"><p class="status-available">Open to public</p></div>
             <div class="mt-2 border-t border-gray-700 pt-2">
                 <span class="status-label">Next</span>
                 <p class="status-event truncate">${nextEvent.summary}</p>
                 <p class="status-time">At ${formatTime(nextEvent.start.dateTime || nextEvent.start.date)}</p>
             </div>`;
+          }
+
         } else {
-          cardContent = `<div><p class="status-available">Available</p><p class="status-event text-gray-500 mt-1 text-lg">No events today</p></div>`;
+          // --- EMPTY ALL DAY ---
+          if (isJP) {
+             // JP Special Logic
+             cardContent = `<div><p class="status-closed">Not in session</p><p class="status-event text-gray-500 mt-1 text-lg">No sessions today</p></div>`;
+          } else {
+             // Normal Room
+             cardContent = `<div><p class="status-available">Open to public</p><p class="status-event text-gray-500 mt-1 text-lg">No events scheduled</p></div>`;
+          }
         }
 
         card.innerHTML = `<h3 class="card-title mb-2 text-white text-xl truncate">${cal.name}</h3><div>${cardContent}</div>`;
         newRoomCards.appendChild(card);
       }
       
-      // Clear and update Room Events
       roomContainer.innerHTML = '';
       roomContainer.appendChild(newRoomCards);
 
-      // 3. Build Weekly Grid (With Auto Scroll)
-      weeklyGrid.innerHTML = ''; // Clear old
+      // 3. Build Weekly Grid
+      weeklyGrid.innerHTML = ''; 
       for (let i = 0; i < 7; i++) {
         const dayDate = new Date(weekStart);
         dayDate.setDate(weekStart.getDate() + i);
@@ -237,7 +262,6 @@
         const col = document.createElement('div');
         col.className = 'highlight-card p-3 rounded-lg text-gray-100 flex flex-col overflow-hidden';
         
-        // Column Header
         col.innerHTML = `
           <div class="mb-2 flex-shrink-0 border-b border-gray-700 pb-1">
             <h4 class="text-lg font-bold text-center text-white">${dayDate.toLocaleDateString([], { weekday: 'short' })}</h4>
@@ -257,7 +281,6 @@
           const list = document.createElement('ul');
           list.className = 'space-y-3 scrolling-content';
           
-          // Helper to generate list items
           const createItems = (evts) => evts.map(e => {
             const start = e.start.dateTime ? formatTime(e.start.dateTime) : 'All Day';
             const colorClass = roomColors[e.calId] || 'bg-gray-700';
@@ -273,10 +296,8 @@
 
           list.innerHTML = createItems(dayEvents);
 
-          // --- THE MAGIC: Duplicate content if it's too long to fit ---
           if (dayEvents.length > 4) {
-             list.innerHTML += createItems(dayEvents); // Duplicate
-             // Calculate speed: 4 seconds per item to keep it readable
+             list.innerHTML += createItems(dayEvents); 
              const duration = dayEvents.length * 4; 
              list.style.animationDuration = `${Math.max(15, duration)}s`;
              list.classList.add('animate-scroll');
@@ -288,9 +309,7 @@
       }
     }
 
-    // Initial Load
     loadDashboard();
-    // Refresh every 5 minutes
     setInterval(loadDashboard, 5 * 60 * 1000); 
 
     // --- AUTO HIDE BUTTON LOGIC ---
@@ -302,22 +321,19 @@
       clearTimeout(idleTimer);
       idleTimer = setTimeout(() => {
         btn.classList.remove('visible');
-      }, 3000); // Hide after 3 seconds
+      }, 3000); 
     }
 
-    // Events to trigger UI showing
     document.addEventListener('mousemove', showUI);
     document.addEventListener('click', showUI);
     document.addEventListener('touchstart', showUI);
 
-    // Fullscreen click handler
     btn.addEventListener('click', () => {
       const el = document.documentElement;
       if (el.requestFullscreen) el.requestFullscreen();
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     });
     
-    // Trigger once on load
     showUI();
 
   </script>
